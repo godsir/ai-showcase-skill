@@ -1,4 +1,23 @@
-# 购物车 + 商城 + 订单页面规范
+# 购物车 + 结算 + 订单 + 个人中心规范
+
+## 架构概览
+
+使用 **React Context**（非 Zustand）管理购物车和订单状态，数据持久化到 localStorage。
+
+```
+CartProvider（React Context）
+  ├─ items: CartItem[]          → 购物车商品
+  ├─ orders: Order[]            → 历史订单
+  ├─ activePlan: Order | null   → 当前生效套餐
+  ├─ addToCart / removeFromCart / clearCart
+  ├─ cartTotal / cartCount
+  ├─ checkout() → Order         → Mock 结算
+  └─ cancelOrder(orderId)
+```
+
+> ⚠️ **为什么不用 Zustand**：React Context + localStorage 对本项目（纯前端 Mock、无复杂异步操作）足够，减少依赖。如需接入真实后端，可切换到 Zustand。
+
+---
 
 ## 商品数据模型（前端静态配置）
 
@@ -9,12 +28,12 @@ export interface Product {
   name: string;
   nameEn: string;
   description: string;
-  features: string[];     // 功能列表（用于 PricingSection 的 ✓ 逐条展示）
-  price: number;          // 单位：美元，如 9.9
-  priceDisplay: string;   // 显示文本，如 "$9.9/mo"
-  themeColor: string;     // accent 颜色
-  popular: boolean;       // 是否为推荐套餐（边框加粗）
-  badge?: string;         // 可选角标文字，如 "最受欢迎"
+  features: string[];
+  price: number;
+  priceDisplay: string;
+  themeColor: string;
+  popular: boolean;
+  badge?: string;
 }
 
 export const PRODUCTS: Product[] = [
@@ -23,12 +42,7 @@ export const PRODUCTS: Product[] = [
     name: '入门套餐',
     nameEn: 'Starter',
     description: '适合个人探索，体验核心 AI 能力',
-    features: [
-      '生图：每月 100 张',
-      '大模型对话：每月 1,000 次',
-      '标准响应速度',
-      '邮件支持',
-    ],
+    features: ['生图：每月 100 张', '大模型对话：每月 1,000 次', '标准响应速度', '邮件支持'],
     price: 9.9,
     priceDisplay: '$9.9/mo',
     themeColor: '#00ff88',
@@ -39,14 +53,8 @@ export const PRODUCTS: Product[] = [
     name: '专业套餐',
     nameEn: 'Pro',
     description: '适合创作者和开发者，解锁全部模块',
-    features: [
-      '生图：每月 1,000 张',
-      '3D 模型生成：每月 50 个',
-      '视频生成：每月 20 段',
-      '大模型对话：无限次',
-      '优先响应速度',
-      '7×24 在线支持',
-    ],
+    features: ['生图：每月 1,000 张', '3D 模型生成：每月 50 个', '视频生成：每月 20 段',
+      '大模型对话：无限次', '优先响应速度', '7×24 在线支持'],
     price: 29.9,
     priceDisplay: '$29.9/mo',
     themeColor: '#6600ff',
@@ -58,14 +66,8 @@ export const PRODUCTS: Product[] = [
     name: '企业套餐',
     nameEn: 'Enterprise',
     description: '面向团队和企业，无限额度 + 专属服务',
-    features: [
-      '全模块无限使用',
-      'API 访问权限',
-      '专属客户经理',
-      'SLA 99.9% 保障',
-      '私有化部署咨询',
-      '团队协作工作台',
-    ],
+    features: ['全模块无限使用', 'API 访问权限', '专属客户经理',
+      'SLA 99.9% 保障', '私有化部署咨询', '团队协作工作台'],
     price: 99.9,
     priceDisplay: '$99.9/mo',
     themeColor: '#ff00aa',
@@ -76,258 +78,160 @@ export const PRODUCTS: Product[] = [
 
 ---
 
-## 全局购物车状态（Zustand）
+## CartContext（`src/hooks/useCart.tsx`）
 
 ```typescript
-// src/lib/store.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { Product } from './products';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
 export interface CartItem {
-  id: string;
+  planId: string;
   name: string;
+  nameEn: string;
   price: number;
+  themeColor: string;
   quantity: number;
 }
 
-interface CartStore {
+export interface Order {
+  id: string;
   items: CartItem[];
-  addItem: (product: Product) => void;
-  removeItem: (id: string) => void;
-  updateQty: (id: string, qty: number) => void;
-  clearCart: () => void;
-  total: () => number;
-  count: () => number;
+  total: number;
+  status: 'pending' | 'paid' | 'active' | 'cancelled';
+  createdAt: string;
+  email: string;
 }
 
-export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
-      items: [],
+interface CartContextType {
+  items: CartItem[];
+  orders: Order[];
+  activePlan: Order | null;
+  addToCart: (item: Omit<CartItem, 'quantity'>) => void;
+  removeFromCart: (planId: string) => void;
+  clearCart: () => void;
+  cartTotal: number;
+  cartCount: number;
+  checkout: () => Order;
+  cancelOrder: (orderId: string) => void;
+}
 
-      addItem: (product) => set((state) => {
-        const existing = state.items.find((i) => i.id === product.id);
-        if (existing) {
-          return {
-            items: state.items.map((i) =>
-              i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
-          };
-        }
-        return {
-          items: [...state.items, {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: 1,
-          }],
-        };
-      }),
+const CART_KEY = 'mindforge_cart';
+const ORDERS_KEY = 'mindforge_orders';
 
-      removeItem: (id) => set((state) => ({
-        items: state.items.filter((i) => i.id !== id),
-      })),
+const CartContext = createContext<CartContextType | null>(null);
 
-      updateQty: (id, qty) => set((state) => ({
-        items: qty <= 0
-          ? state.items.filter((i) => i.id !== id)
-          : state.items.map((i) => i.id === id ? { ...i, quantity: qty } : i),
-      })),
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try { const raw = localStorage.getItem(CART_KEY); return raw ? JSON.parse(raw) : []; }
+    catch { return []; }
+  });
 
-      clearCart: () => set({ items: [] }),
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try { const raw = localStorage.getItem(ORDERS_KEY); return raw ? JSON.parse(raw) : []; }
+    catch { return []; }
+  });
 
-      total: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+  const activePlan = orders.find(o => o.status === 'active') ?? null;
 
-      count: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
-    }),
-    { name: 'ai-showcase-cart' }
-  )
-);
+  useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(items)); }, [items]);
+  useEffect(() => { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders)); }, [orders]);
+
+  const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
+    setItems(prev => {
+      if (prev.find(i => i.planId === item.planId)) return prev; // 套餐不重复添加
+      return [...prev, { ...item, quantity: 1 }];
+    });
+  }, []);
+
+  const removeFromCart = useCallback((planId: string) => {
+    setItems(prev => prev.filter(i => i.planId !== planId));
+  }, []);
+
+  const clearCart = useCallback(() => setItems([]), []);
+
+  const cartTotal = items.reduce((sum, i) => sum + i.price, 0);
+  const cartCount = items.length;
+
+  const checkout = useCallback((): Order => {
+    if (items.length === 0) throw new Error('购物车为空');
+    const order: Order = {
+      id: `ORD-${Date.now().toString(36).toUpperCase()}`,
+      items: [...items],
+      total: cartTotal,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      email: 'demo@mindforge.ai',
+    };
+    setOrders(prev => [
+      ...prev.map(o => o.status === 'active' ? { ...o, status: 'cancelled' as const } : o),
+      order,
+    ]);
+    setItems([]);
+    return order;
+  }, [items, cartTotal]);
+
+  const cancelOrder = useCallback((orderId: string) => {
+    setOrders(prev => prev.map(o =>
+      o.id === orderId ? { ...o, status: 'cancelled' as const } : o
+    ));
+  }, []);
+
+  return (
+    <CartContext.Provider value={{
+      items, orders, activePlan,
+      addToCart, removeFromCart, clearCart,
+      cartTotal, cartCount, checkout, cancelOrder,
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error('useCart must be used within CartProvider');
+  return ctx;
+}
 ```
 
 ---
 
 ## PricingSection 组件（首页定价区）
 
+### 关键改动
+
+- **「立即购买」→「加入购物车」**，带状态反馈（已添加 / 已在购物车）
+- 未登录点击自动跳转 `/login`（保存来源路径）
+
 ```tsx
-// src/components/sections/PricingSection.tsx
-import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
-import { PRODUCTS } from '@/lib/products';
-import { useCartStore } from '@/lib/store';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/cn';
-
 export function PricingSection() {
-  const { user } = useAuth();
-  const addItem = useCartStore((s) => s.addItem);
+  const { user, isGuest } = useAuth();
+  const { addToCart, items } = useCart();
   const navigate = useNavigate();
+  const [addedId, setAddedId] = useState<string | null>(null);
 
-  const handleBuy = (product: typeof PRODUCTS[0]) => {
+  const handleAddToCart = (product: Product) => {
     if (!user) {
-      navigate('/login', { state: { from: '/shop' } });
+      navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
-    addItem(product);
-    navigate('/cart');
+    addToCart({
+      planId: product.id,
+      name: product.name,
+      nameEn: product.nameEn,
+      price: product.price,
+      themeColor: product.themeColor,
+    });
+    setAddedId(product.id);
+    setTimeout(() => setAddedId(null), 2000);
   };
 
-  return (
-    <section id="pricing" className="py-20 px-6 bg-white">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-14"
-        >
-          <h2 className="text-4xl font-bold text-black mb-3">选择适合你的套餐</h2>
-          <p className="text-black/50 text-lg">按月订阅，随时取消</p>
-        </motion.div>
+  // 按钮渲染逻辑
+  const isInCart = items.some(i => i.planId === product.id);
+  const isAdded = addedId === product.id;
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {PRODUCTS.map((product, i) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={cn(
-                'relative bg-white rounded-2xl p-8 flex flex-col',
-                product.popular
-                  ? 'border-2 border-black shadow-lg'
-                  : 'border border-black/20'
-              )}
-            >
-              {/* 推荐角标 */}
-              {product.badge && (
-                <div
-                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold rounded-full text-black"
-                  style={{ background: product.themeColor }}
-                >
-                  {product.badge}
-                </div>
-              )}
-
-              {/* Accent bar */}
-              <div
-                className="h-1 w-12 rounded-full mb-6"
-                style={{ background: product.themeColor }}
-              />
-
-              {/* 套餐名 */}
-              <h3 className="text-xl font-bold text-black mb-1">{product.name}</h3>
-              <p className="text-sm text-black/40 mb-6">{product.description}</p>
-
-              {/* 价格 */}
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-black">${product.price}</span>
-                <span className="text-black/40 text-sm ml-1">/月</span>
-              </div>
-
-              {/* 功能列表 */}
-              <ul className="space-y-3 mb-8 flex-1">
-                {product.features.map((feat) => (
-                  <li key={feat} className="flex items-start gap-2.5 text-sm text-black/70">
-                    <Check size={14} className="mt-0.5 flex-shrink-0 text-black" />
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-
-              {/* 购买按钮 */}
-              <button
-                onClick={() => handleBuy(product)}
-                className={cn(
-                  'w-full py-3 font-medium rounded-full transition-all duration-200',
-                  product.popular
-                    ? 'bg-black text-white hover:bg-black/80'
-                    : 'border border-black text-black hover:bg-black hover:text-white'
-                )}
-              >
-                {user ? '加入购物车' : '立即购买'}
-              </button>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-```
-
----
-
-## ShopPage（`/shop`）
-
-```tsx
-// src/pages/ShopPage.tsx
-import { motion } from 'framer-motion';
-import { ShoppingCart } from 'lucide-react';
-import { PRODUCTS } from '@/lib/products';
-import { useCartStore } from '@/lib/store';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-
-export function ShopPage() {
-  const { user } = useAuth();
-  const addItem = useCartStore((s) => s.addItem);
-  const navigate = useNavigate();
-
-  const handleAdd = (product: typeof PRODUCTS[0]) => {
-    if (!user) { navigate('/login', { state: { from: '/shop' } }); return; }
-    addItem(product);
-  };
-
-  return (
-    <div className="min-h-screen bg-white pt-20 pb-16 px-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-black mb-2">AI 能力商城</h1>
-        <p className="text-black/50 mb-12">选购适合你的 AI 能力套餐，即买即用</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {PRODUCTS.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="border border-black rounded-2xl overflow-hidden"
-            >
-              {/* 封面占位 */}
-              <div
-                className="h-40 flex items-center justify-center text-4xl"
-                style={{ background: p.themeColor + '18' }}
-              >
-                {i === 0 ? '🌱' : i === 1 ? '⚡' : '🏢'}
-              </div>
-
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-bold text-black text-lg">{p.name}</h3>
-                    <p className="text-sm text-black/40">{p.nameEn}</p>
-                  </div>
-                  <span className="text-xl font-bold text-black">${p.price}</span>
-                </div>
-                <p className="text-sm text-black/60 mb-5">{p.description}</p>
-                <button
-                  onClick={() => handleAdd(p)}
-                  className="w-full py-2.5 flex items-center justify-center gap-2 border border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-colors"
-                >
-                  <ShoppingCart size={14} />
-                  加入购物车
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  <button onClick={() => handleAddToCart(product)}>
+    {isAdded ? '✓ 已添加' : isInCart ? '已在购物车' : '加入购物车'}
+  </button>
 }
 ```
 
@@ -335,285 +239,299 @@ export function ShopPage() {
 
 ## CartPage（`/cart`）
 
+### 功能要点
+
+- 未登录 → 显示"请先登录"引导页
+- 空购物车 → 显示空状态（图标 + 文案 + "浏览套餐"按钮）
+- 有商品 → 列表 + 底部汇总
+
+### 空状态设计
+
 ```tsx
-// src/pages/CartPage.tsx
-import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
-import { useCheckout } from '@/hooks/useCheckout';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+<div className="text-center py-20">
+  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-black/[0.03] flex items-center justify-center">
+    <ShoppingBag size={36} className="text-black/20" />
+  </div>
+  <h3 className="text-xl font-bold text-black mb-2">购物车是空的</h3>
+  <p className="text-black/40 text-sm mb-8">去挑选一个适合你的 AI 套餐吧</p>
+  <Link to="/#pricing" className="...">浏览套餐</Link>
+</div>
+```
 
-const TAX_RATE = 0.1;
+### 商品列表项
 
-export function CartPage() {
-  const { items, removeItem, updateQty, total } = useCartStore();
-  const { startCheckout } = useCheckout();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+每个商品卡片带色条标识、名称、价格、删除按钮：
 
-  const subtotal = total();
-  const tax = subtotal * TAX_RATE;
-  const grandTotal = subtotal + tax;
+```tsx
+<div key={item.planId} className="flex items-center gap-4 p-5 border border-black/10 rounded-2xl">
+  <div className="w-1.5 h-14 rounded-full flex-shrink-0" style={{ background: item.themeColor }} />
+  <div className="flex-1">
+    <h3 className="text-base font-bold text-black">{item.name}</h3>
+    <p className="text-xs text-black/40">{item.nameEn}</p>
+  </div>
+  <div className="text-right">
+    <div className="text-lg font-bold">${item.price}</div>
+    <div className="text-xs text-black/40">/月</div>
+  </div>
+  <button onClick={() => removeFromCart(item.planId)}>
+    <Trash2 size={16} />
+  </button>
+</div>
+```
 
-  const handleCheckout = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await startCheckout(items);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '结算失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
+### 底部汇总区
 
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-white pt-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-5xl mb-4">🛒</div>
-          <p className="text-black/50 text-lg mb-6">购物车是空的</p>
-          <button
-            onClick={() => navigate('/shop')}
-            className="px-6 py-3 bg-black text-white rounded-full font-medium hover:bg-black/80 transition-colors"
-          >
-            去选购
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-white pt-20 pb-16 px-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-black mb-8">购物车</h1>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* 商品列表 */}
-          <div className="flex-1 space-y-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 border border-black/10 rounded-xl p-4"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-black">{item.name}</div>
-                  <div className="text-sm text-black/40">${item.price.toFixed(2)} / 月</div>
-                </div>
-
-                {/* 数量控制 */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateQty(item.id, item.quantity - 1)}
-                    className="w-7 h-7 rounded-full border border-black/20 flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-colors"
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQty(item.id, item.quantity + 1)}
-                    className="w-7 h-7 rounded-full border border-black/20 flex items-center justify-center hover:bg-black hover:text-white hover:border-black transition-colors"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-
-                {/* 小计 */}
-                <div className="w-20 text-right font-medium">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </div>
-
-                {/* 删除 */}
-                <button
-                  onClick={() => removeItem(item.id)}
-                  className="text-black/30 hover:text-black transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* 汇总区 */}
-          <div className="lg:w-72">
-            <div className="border border-black rounded-2xl p-6 sticky top-20">
-              <h2 className="font-bold text-black text-lg mb-4">订单摘要</h2>
-
-              <div className="space-y-3 mb-4 text-sm">
-                <div className="flex justify-between text-black/60">
-                  <span>小计</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-black/60">
-                  <span>税费（10%）</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <div className="h-px bg-black/10" />
-                <div className="flex justify-between font-bold text-black text-base">
-                  <span>合计</span>
-                  <span>${grandTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
-              )}
-
-              <button
-                onClick={handleCheckout}
-                disabled={loading}
-                className="w-full py-3 bg-black text-white font-medium rounded-full hover:bg-black/80 transition-colors disabled:opacity-60"
-              >
-                {loading ? '跳转支付中...' : '去结算 →'}
-              </button>
-
-              <p className="text-xs text-black/30 text-center mt-3">
-                由 Stripe 安全支付保障
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+```tsx
+<div className="border border-black rounded-2xl p-6">
+  <div className="flex justify-between mb-6">
+    <span className="text-black/50">小计</span>
+    <span className="text-xl font-bold">${cartTotal.toFixed(2)}</span>
+  </div>
+  <button onClick={() => navigate('/checkout')} className="w-full py-3.5 bg-black text-white font-medium rounded-full">
+    立即结算
+  </button>
+  {isGuest && <p className="text-xs text-center text-black/30 mt-4">💡 这是体验模式，结算不会产生真实扣费</p>}
+</div>
 ```
 
 ---
 
-## OrdersPage（`/orders`，需登录）
+## CheckoutPage（`/checkout`）
+
+### 页面流程
+
+```
+进入结算页
+  ├─ 未登录 → 跳转 /login
+  ├─ 购物车空 → 跳转 /cart
+  └─ 正常 → 显示订单确认
+       ↓
+  点击「确认支付」
+       ↓
+  processing = true → Loader 动画（2 秒）
+       ↓
+  checkout() → 创建 Mock 订单
+       ↓
+  显示「订阅成功！」
+       ↓
+  提供「查看我的订阅」和「返回首页」
+```
+
+### 订单确认区域
 
 ```tsx
-// src/pages/OrdersPage.tsx
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
-interface Order {
-  id: string;
-  stripe_session_id: string;
-  items: { productId: string; name: string; price: number; qty: number }[];
-  amount_total: number;
-  currency: string;
-  status: 'pending' | 'paid' | 'cancelled';
-  created_at: string;
-}
-
-const STATUS_LABEL: Record<Order['status'], string> = {
-  pending: '待支付',
-  paid: '已完成',
-  cancelled: '已取消',
-};
-
-const STATUS_COLOR: Record<Order['status'], string> = {
-  pending: 'bg-yellow-50 text-yellow-700',
-  paid: 'bg-green-50 text-green-700',
-  cancelled: 'bg-red-50 text-red-600',
-};
-
-export function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch('/api/orders', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        const { orders } = await res.json();
-        setOrders(orders);
-      }
-      setLoading(false);
-    };
-    fetchOrders();
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-white pt-20 pb-16 px-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-black mb-8">我的订单</h1>
-
-        {loading ? (
-          <div className="text-black/40 text-center py-20">加载中...</div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-4xl mb-4">📭</div>
-            <p className="text-black/50">暂无订单记录</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order.id} className="border border-black/10 rounded-2xl p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-xs text-black/30 mb-1">订单号</div>
-                    <div className="text-sm font-mono text-black/70 truncate max-w-xs">
-                      {order.stripe_session_id}
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[order.status]}`}>
-                    {STATUS_LABEL[order.status]}
-                  </span>
-                </div>
-
-                {/* 商品 */}
-                <div className="space-y-1.5 mb-4">
-                  {order.items.map((item) => (
-                    <div key={item.productId} className="flex justify-between text-sm">
-                      <span className="text-black/70">{item.name} × {item.qty}</span>
-                      <span className="text-black">${(item.price * item.qty).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-black/10">
-                  <span className="text-xs text-black/30">
-                    {new Date(order.created_at).toLocaleString('zh-CN')}
-                  </span>
-                  <span className="font-bold text-black">
-                    合计 ${(order.amount_total / 100).toFixed(2)} {order.currency.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+<div className="border border-black rounded-2xl overflow-hidden mb-6">
+  <div className="px-6 py-4 bg-black/[0.03] border-b border-black/10">
+    <h3 className="text-sm font-medium text-black/50">订阅详情</h3>
+  </div>
+  {items.map(item => (
+    <div key={item.planId} className="flex items-center gap-4 px-6 py-4 border-b border-black/5 last:border-b-0">
+      <div className="w-1.5 h-10 rounded-full" style={{ background: item.themeColor }} />
+      <div className="flex-1">
+        <p className="font-medium text-sm">{item.name}</p>
+        <p className="text-xs text-black/40">{item.nameEn} · 按月订阅</p>
       </div>
+      <p className="font-bold">${item.price}<span className="text-xs text-black/40">/月</span></p>
     </div>
-  );
-}
+  ))}
+</div>
+```
+
+### 优惠码（占位 UI）
+
+```tsx
+<div className="flex gap-3 mb-6">
+  <input placeholder="输入优惠码" className="flex-1 border border-black/15 rounded-xl px-4 py-3 text-sm" />
+  <button className="px-5 py-3 border border-black text-sm font-medium rounded-xl">应用</button>
+</div>
+```
+
+### 支付方式选择
+
+```tsx
+<div className="space-y-3">
+  {['微信支付', '支付宝', '信用卡 / 借记卡'].map((method, i) => (
+    <label key={method} className="flex items-center gap-3 p-3 border border-black/10 rounded-xl cursor-pointer">
+      <input type="radio" name="payment" defaultChecked={i === 0} className="accent-black" />
+      <span className="text-sm">{method}</span>
+      {i === 0 && <span className="ml-auto text-xs text-green-600 font-medium">推荐</span>}
+    </label>
+  ))}
+</div>
+```
+
+### 成功页面
+
+```tsx
+<div className="text-center">
+  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-50 flex items-center justify-center">
+    <Check size={40} className="text-green-600" />
+  </div>
+  <h1 className="text-3xl font-bold mb-3">订阅成功！</h1>
+  <p className="text-black/50 text-sm mb-2">订单号：{orderId}</p>
+  <p className="text-black/40 text-sm mb-8">
+    {isGuest ? '这是体验模式的模拟订单' : '你的 AI 套餐已激活'}
+  </p>
+  <div className="flex gap-3 justify-center">
+    <Link to="/profile">查看我的订阅</Link>
+    <Link to="/">返回首页</Link>
+  </div>
+</div>
 ```
 
 ---
 
-## 更新后的项目目录（新增文件）
+## ProfilePage（`/profile`）— 个人中心
+
+### 三 Tab 布局
+
+```tsx
+const tabs: { id: Tab; label: string; icon: typeof User }[] = [
+  { id: 'info', label: '账号信息', icon: User },
+  { id: 'orders', label: '我的订单', icon: Package },
+  { id: 'usage', label: '使用量', icon: BarChart3 },
+];
+```
+
+### Tab 1：账号信息
+
+- 用户头部（渐变背景 + 头像 + 名称 + 标签 + 邮箱）
+- 信息卡片网格（邮箱、注册时间、上次登录）
+- 修改密码（游客隐藏）
+- 退出按钮（文案区分游客/正式用户）
+
+### Tab 2：我的订单
+
+```tsx
+const STATUS_MAP = {
+  active: { label: '生效中', color: 'bg-green-50 text-green-700' },
+  paid: { label: '已完成', color: 'bg-green-50 text-green-700' },
+  pending: { label: '待支付', color: 'bg-yellow-50 text-yellow-700' },
+  cancelled: { label: '已取消', color: 'bg-red-50 text-red-600' },
+};
+
+{orders.length === 0 ? (
+  <div className="text-center py-16">
+    <Package size={40} className="mx-auto text-black/20 mb-4" />
+    <p className="text-black/40">暂无订单记录</p>
+    <Link to="/#pricing">浏览套餐</Link>
+  </div>
+) : (
+  orders.map(order => (
+    <div key={order.id} className="border border-black/10 rounded-2xl p-5">
+      {/* 订单号 + 状态 */}
+      {/* 商品列表 */}
+      {/* 总价 + 日期 + 取消订阅按钮（active 订单） */}
+    </div>
+  ))
+)}
+```
+
+### Tab 3：使用量
+
+```tsx
+const usageData = [
+  { icon: ImageIcon, label: '图片生成', used: 67, limit: 1000, color: '#00ff88' },
+  { icon: MessageSquare, label: '大模型对话', used: 432, limit: 99999, color: '#ffee00', unlimited: true },
+  { icon: Code2, label: '代码生成', used: 29, limit: 99999, color: '#ff6600', unlimited: true },
+];
+
+// 进度条组件
+<div className="space-y-6">
+  {usageData.map(item => (
+    <div key={item.label}>
+      <div className="flex justify-between text-sm mb-2">
+        <span className="flex items-center gap-2">
+          <item.icon size={14} style={{ color: item.color }} />
+          {item.label}
+        </span>
+        <span className="text-black/50">
+          {item.unlimited ? '无限' : `${item.used} / ${item.limit}`}
+        </span>
+      </div>
+      <div className="h-2 bg-black/5 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${item.unlimited ? 15 : Math.min((item.used / item.limit) * 100, 100)}%`,
+            background: item.color,
+          }}
+        />
+      </div>
+    </div>
+  ))}
+</div>
+```
+
+---
+
+## NavBar 购物车图标
+
+### 图标 + 数量角标
+
+```tsx
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
+
+const { cartCount } = useCart();
+
+<Link to="/cart" className="relative p-2 text-black/60 hover:text-black transition-colors">
+  <ShoppingCart size={20} />
+  {cartCount > 0 && (
+    <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+      {cartCount}
+    </span>
+  )}
+</Link>
+```
+
+### 下拉菜单（已登录）
+
+```tsx
+{/* 用户下拉菜单 */}
+{user ? (
+  <div className="relative group">
+    <button className="w-9 h-9 rounded-full bg-black text-white text-sm font-bold flex items-center justify-center">
+      {user.email?.[0]?.toUpperCase()}
+    </button>
+    <div className="absolute right-0 mt-2 w-48 bg-white border border-black/10 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+      <Link to="/profile" className="block px-4 py-3 text-sm hover:bg-black/[0.03]">个人中心</Link>
+      <Link to="/cart" className="block px-4 py-3 text-sm hover:bg-black/[0.03]">购物车</Link>
+      <button onClick={handleSignOut} className="block w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50">
+        {isGuest ? '退出体验' : '退出登录'}
+      </button>
+    </div>
+  </div>
+) : (
+  <Link to="/login" className="px-5 py-2 bg-black text-white text-sm font-medium rounded-full">
+    登录 / 注册
+  </Link>
+)}
+```
+
+---
+
+## 更新后的项目目录
 
 ```
 src/
   pages/
-    HomePage.tsx          # 首页（原 App.tsx 内容拆出）
-    LoginPage.tsx         # 登录/注册（见 auth-guide.md）
-    ShopPage.tsx          # 商城（本文件）
-    CartPage.tsx          # 购物车（本文件）
-    OrdersPage.tsx        # 订单（本文件，ProtectedRoute 保护）
-    CheckoutSuccessPage.tsx
-    CheckoutCancelPage.tsx
+    HomePage.tsx          # 首页
+    LoginPage.tsx         # 登录/注册 + 游客体验入口
+    ProfilePage.tsx       # 个人中心（三 Tab）
+    CartPage.tsx          # 购物车
+    CheckoutPage.tsx      # 结算页
+    ShopPage.tsx          # 商城（可选）
+    AIChatPage.tsx        # AI 助手（可选）
+  hooks/
+    useAuth.tsx           # AuthContext + 游客模式
+    useCart.tsx           # CartContext + OrderContext
   components/
-    ProtectedRoute.tsx    # 路由守卫（见 auth-guide.md）
+    ProtectedRoute.tsx    # 路由守卫
     sections/
-      PricingSection.tsx  # 定价区（本文件）
+      PricingSection.tsx  # 定价区（加入购物车）
   lib/
     products.ts           # 商品静态配置
-    store.ts              # Zustand 购物车 store
-  hooks/
-    useCheckout.ts        # Stripe 结算（见 payment-guide.md）
-cloud-functions/
-  create-checkout.js      # 创建 Stripe Session
-  webhook.js              # Webhook 写订单
-  orders.js               # 查询订单
+    cn.ts                 # clsx + tailwind-merge
+    supabase.ts           # Supabase 客户端
 ```
