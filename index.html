@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeuraHub — 探索 AI 的无限可能</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ============================================
+   Design Token System
+   ============================================ */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text-primary: #000000;
+  --color-text-secondary: rgba(0,0,0,0.6);
+  --color-text-on-dark: #ffffff;
+  --color-border: #000000;
+  --color-border-subtle: rgba(0,0,0,0.12);
+  --color-btn-solid-bg: #000000;
+  --color-btn-solid-text: #ffffff;
+  --overlay-card-subtle: rgba(0,0,0,0.08);
+  --overlay-dark-glass: rgba(255,255,255,0.16);
+  --gradient-hero: linear-gradient(135deg, #00ff88 0%, #ffee00 25%, #6600ff 60%, #ff00aa 100%);
+  --gradient-text: linear-gradient(90deg, #00ff88, #6600ff, #ff00aa);
+  --theme-image-gen: #00ff88;
+  --theme-3d-model: #6600ff;
+  --theme-llm-chat: #ffee00;
+  --theme-video-gen: #ff00aa;
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+  --font-sans: 'Inter', 'SF Pro Display', system-ui, helvetica, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── Remix Icon base ── */
+.ri { display: inline-block; vertical-align: middle; line-height: 1; }
+.ri-fw { width: 1.2em; text-align: center; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #fff; }
+::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+
+/* ── Utility ── */
+.container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+.gradient-text {
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.btn-solid {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 28px; background: #000; color: #fff;
+  font-size: 14px; font-weight: 600; border: none;
+  border-radius: var(--radius-pill); cursor: pointer;
+  transition: all 0.2s; text-decoration: none; white-space: nowrap;
+}
+.btn-solid:hover { background: rgba(0,0,0,0.82); transform: translateY(-1px); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 11px 27px; background: transparent; color: #000;
+  font-size: 14px; font-weight: 600;
+  border: 1px solid #000; border-radius: var(--radius-pill);
+  cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap;
+}
+.btn-ghost:hover { background: #000; color: #fff; }
+
+/* ============================================
+   NavBar
+   ============================================ */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: #fff; border-bottom: 1px solid #000;
+  transition: box-shadow 0.3s;
+}
+.navbar.scrolled { box-shadow: 0 1px 0 0 #000; }
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; max-width: 1280px; margin: 0 auto; padding: 0 24px;
+}
+.nav-logo { font-size: 20px; font-weight: 800; color: #000; text-decoration: none; letter-spacing: -0.5px; }
+.nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+.nav-links a { font-size: 14px; font-weight: 500; color: rgba(0,0,0,0.6); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: #000; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.cart-btn {
+  position: relative; background: none; border: none; cursor: pointer;
+  padding: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; transition: transform 0.2s;
+}
+.cart-btn:hover { transform: scale(1.1); }
+.cart-badge {
+  position: absolute; top: 2px; right: 2px;
+  background: #000; color: #fff; font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.user-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.05); border: none; border-radius: var(--radius-pill);
+  padding: 6px 14px; cursor: pointer; font-size: 13px; font-weight: 500; color: #000;
+  transition: background 0.2s; position: relative;
+}
+.user-btn:hover { background: rgba(0,0,0,0.1); }
+.user-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--gradient-hero); }
+.dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: #fff; border: 1px solid #000; border-radius: 12px;
+  padding: 8px; min-width: 160px; display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+.dropdown.open { display: block; }
+.dropdown a {
+  display: block; padding: 9px 14px; font-size: 13px; color: #000;
+  text-decoration: none; border-radius: 8px; transition: background 0.15s;
+}
+.dropdown a:hover { background: rgba(0,0,0,0.05); }
+.dropdown hr { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 4px 0; }
+.hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; font-size: 22px; }
+.mobile-menu {
+  display: none; background: #fff; border-top: 1px solid #000;
+  padding: 16px 24px; flex-direction: column; gap: 16px;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a { font-size: 15px; font-weight: 500; color: #000; text-decoration: none; }
+
+@media (max-width: 768px) {
+  .nav-links, .nav-right .btn-solid, .nav-right .btn-ghost { display: none; }
+  .hamburger { display: block; }
+  .user-btn span { display: none; }
+}
+
+/* ============================================
+   Pages Router
+   ============================================ */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ============================================
+   Hero Section
+   ============================================ */
+.hero {
+  position: relative; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; background: #fff; padding-top: 64px;
+}
+.hero-orb1 {
+  position: absolute; bottom: -10%; right: -5%;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: var(--gradient-hero);
+  filter: blur(120px); opacity: 0.12; pointer-events: none;
+}
+.hero-orb2 {
+  position: absolute; top: 10%; left: -8%;
+  width: 400px; height: 400px; border-radius: 50%;
+  background: linear-gradient(135deg, #6600ff, #ff00aa);
+  filter: blur(100px); opacity: 0.08; pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; text-align: center; max-width: 860px; padding: 0 24px; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border: 1px solid rgba(0,0,0,0.15); border-radius: 100px;
+  font-size: 13px; font-weight: 500; color: rgba(0,0,0,0.55);
+  margin-bottom: 28px; background: rgba(0,0,0,0.03);
+}
+.hero-eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: #00ff88; display: inline-block; }
+.hero-title {
+  font-size: clamp(44px, 8vw, 92px);
+  font-weight: 900; color: #000; line-height: 1.05;
+  letter-spacing: -2px; margin-bottom: 24px;
+}
+.hero-sub { font-size: 20px; color: rgba(0,0,0,0.55); max-width: 580px; margin: 0 auto 40px; line-height: 1.7; }
+.hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero-tags { margin-top: 64px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.hero-tag {
+  padding: 7px 18px; font-size: 13px; font-weight: 500;
+  border-radius: 100px; border: 1px solid; cursor: default;
+}
+.hero-img {
+  margin-top: 64px; position: relative; z-index: 1;
+  border-radius: 20px; overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.12);
+}
+.hero-img img { width: 100%; max-width: 900px; display: block; margin: 0 auto; }
+
+/* Fade-in animations */
+@keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.anim-up { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-up-2 { animation: fadeUp 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-up-3 { animation: fadeUp 0.8s 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ============================================
+   Products Section
+   ============================================ */
+.products-section { padding: 100px 0; background: #fff; }
+.section-header { margin-bottom: 56px; }
+.section-title { font-size: 40px; font-weight: 800; color: #000; margin-bottom: 10px; letter-spacing: -1px; }
+.section-sub { font-size: 16px; color: rgba(0,0,0,0.45); }
+.products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 1024px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .products-grid { grid-template-columns: 1fr; } }
+.product-card {
+  background: #fff; border: 1px solid #000; border-radius: var(--radius-card);
+  overflow: hidden; cursor: pointer; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+.product-card:hover { transform: translateY(-6px); }
+.card-accent { height: 4px; width: 100%; transition: height 0.25s; }
+.product-card:hover .card-accent { height: 6px; }
+.card-body { padding: 24px; }
+.card-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 16px;
+}
+.card-name { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 2px; }
+.card-name-en { font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.35); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.card-desc { font-size: 13px; color: rgba(0,0,0,0.55); line-height: 1.65; margin-bottom: 20px; }
+.card-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 16px; }
+.card-btn {
+  width: 100%; padding: 9px; font-size: 13px; font-weight: 600;
+  border: 1px solid #000; border-radius: var(--radius-pill);
+  background: transparent; color: #000; cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* ============================================
+   Demo Section
+   ============================================ */
+.demo-section { padding: 100px 0; background: #000; color: #fff; }
+.demo-section .section-title { color: #fff; }
+.demo-layout { display: flex; gap: 32px; margin-top: 48px; }
+@media (max-width: 1024px) { .demo-layout { flex-direction: column; } }
+.demo-tabs { display: flex; flex-direction: column; gap: 6px; width: 220px; flex-shrink: 0; }
+@media (max-width: 1024px) { .demo-tabs { flex-direction: row; overflow-x: auto; width: 100%; padding-bottom: 4px; } }
+.demo-tab {
+  padding: 14px 18px; border-radius: 12px; cursor: pointer;
+  border-left: 3px solid transparent; text-align: left;
+  background: transparent; border-top: none; border-right: none; border-bottom: none;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.demo-tab .tab-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.4); transition: color 0.2s; }
+.demo-tab .tab-en { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 2px; transition: color 0.2s; }
+.demo-tab.active .tab-name { color: #fff; }
+.demo-tab.active .tab-en { color: rgba(255,255,255,0.5); }
+.demo-panel {
+  flex: 1; border-radius: 20px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1); min-height: 440px;
+}
+.demo-pane { display: none; height: 100%; }
+.demo-pane.active { display: flex; flex-direction: column; }
+
+/* Image gen demo */
+.demo-inner { padding: 24px; background: #18181b; height: 100%; display: flex; flex-direction: column; gap: 20px; }
+.demo-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.demo-input-row { display: flex; gap: 10px; }
+.demo-input {
+  flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 12px 16px; color: #fff; font-size: 13px;
+  font-family: var(--font-sans); outline: none; transition: border-color 0.2s;
+}
+.demo-input:focus { border-color: rgba(0,255,136,0.5); }
+.demo-input::placeholder { color: rgba(255,255,255,0.28); }
+.demo-gen-btn {
+  padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap;
+}
+.demo-gen-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.demo-prompts { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-prompt-chip {
+  padding: 5px 12px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 100px;
+  font-size: 11px; color: rgba(255,255,255,0.45); cursor: pointer;
+  transition: all 0.15s; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+}
+.demo-prompt-chip:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.gen-results { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
+.gen-result-card {
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden; position: relative;
+}
+.gen-result-card img { width: 100%; height: 100%; object-fit: cover; display: block; min-height: 100px; }
+.gen-result-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 8px 10px; background: linear-gradient(transparent, rgba(0,0,0,0.7));
+}
+.gen-result-overlay .r-name { font-size: 12px; font-weight: 600; color: #fff; }
+.gen-result-overlay .r-desc { font-size: 10px; color: rgba(255,255,255,0.6); }
+.gen-placeholder {
+  aspect-ratio: 1/1; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(102,0,255,0.12));
+}
+.gen-placeholder .gen-icon { font-size: 28px; color: rgba(255,255,255,0.4); }
+.gen-placeholder .label { font-size: 11px; font-weight: 600; color: #fff; }
+.gen-placeholder .desc { font-size: 10px; color: rgba(255,255,255,0.35); text-align: center; padding: 0 8px; }
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+.spinner-w { border-color: rgba(255,255,255,0.2); border-top-color: #fff; }
+
+/* 3D canvas */
+#canvas3d { width: 100%; border-radius: 12px; background: rgba(0,0,0,0.5); max-height: 280px; }
+.model-btns { display: flex; gap: 10px; margin-top: auto; }
+.model-btn {
+  flex: 1; padding: 9px; font-size: 12px; font-weight: 500;
+  background: transparent; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45); border-radius: 10px; cursor: pointer; transition: all 0.2s;
+}
+.model-btn:hover, .model-btn.active { border-color: rgba(102,0,255,0.6); color: #fff; }
+
+/* LLM Chat */
+.chat-header { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+.chat-header .chat-title { font-size: 13px; font-weight: 600; color: #ffee00; }
+.chat-header .chat-mode { font-size: 11px; color: rgba(255,255,255,0.25); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg { display: flex; }
+.msg.user { justify-content: flex-end; }
+.msg.ai { justify-content: flex-start; }
+.msg-bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 18px;
+  font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+}
+.msg.user .msg-bubble { background: #ffee00; color: #000; border-bottom-right-radius: 4px; }
+.msg.ai .msg-bubble { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+.chat-input-row { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px; }
+.chat-input {
+  flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 10px 14px; color: #fff; font-size: 13px;
+  font-family: var(--font-sans); outline: none;
+}
+.chat-input::placeholder { color: rgba(255,255,255,0.28); }
+.chat-send {
+  width: 40px; height: 40px; background: #ffee00; border: none;
+  border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: opacity 0.2s;
+}
+.chat-send:hover { opacity: 0.82; }
+
+/* Video gen */
+.video-preview {
+  border-radius: 12px; aspect-ratio: 16/9;
+  display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,0,170,0.08), rgba(102,0,255,0.15));
+  border: 1px solid rgba(255,0,170,0.2);
+}
+.video-preview .v-emoji { font-size: 40px; margin-bottom: 8px; color: rgba(255,255,255,0.5); display: block; }
+.video-preview .v-text { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7); }
+.video-preview .v-meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+.video-preview .v-hint { font-size: 13px; color: rgba(255,255,255,0.25); }
+.progress-wrap { }
+.progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 100px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 100px; transition: width 0.1s linear; }
+.video-btns { display: flex; gap: 10px; margin-top: auto; }
+.video-start-btn {
+  flex: 1; padding: 11px; font-size: 13px; font-weight: 600;
+  border-radius: 12px; cursor: pointer; border: 1px solid #ff00aa;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s;
+}
+.video-reset-btn {
+  width: 44px; height: 44px; background: transparent; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; cursor: pointer; font-size: 14px; color: rgba(255,255,255,0.4);
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.video-reset-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+/* ============================================
+   Pricing Section
+   ============================================ */
+.pricing-section { padding: 100px 0; background: #fff; }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 960px; margin: 0 auto; }
+@media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+.pricing-card {
+  position: relative; background: #fff; border-radius: 20px;
+  padding: 36px 32px; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.15);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.pricing-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+.pricing-card.popular { border: 2px solid #000; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+.pricing-badge {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  padding: 4px 16px; font-size: 11px; font-weight: 700; border-radius: 100px; color: #000;
+  white-space: nowrap;
+}
+.price-accent { height: 4px; width: 48px; border-radius: 100px; margin-bottom: 24px; }
+.price-name { font-size: 20px; font-weight: 700; color: #000; margin-bottom: 4px; }
+.price-desc { font-size: 13px; color: rgba(0,0,0,0.45); margin-bottom: 28px; }
+.price-amount { margin-bottom: 32px; }
+.price-num { font-size: 52px; font-weight: 900; color: #000; letter-spacing: -2px; }
+.price-unit { font-size: 14px; color: rgba(0,0,0,0.4); margin-left: 4px; }
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; flex: 1; }
+.price-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: rgba(0,0,0,0.65); }
+.price-features li::before { content: '✓'; font-weight: 700; color: #000; flex-shrink: 0; margin-top: 1px; }
+
+/* ============================================
+   Stats Section
+   ============================================ */
+.stats-section { padding: 100px 0; background: #000; color: #fff; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; text-align: center; margin-top: 64px; }
+@media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; gap: 40px; } }
+.stat-num { font-size: 72px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -3px; margin-bottom: 12px; }
+.stat-label { font-size: 16px; color: rgba(255,255,255,0.55); }
+.stat-note { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 6px; }
+
+/* ============================================
+   Shop Page
+   ============================================ */
+.page-header { padding: 100px 0 40px; background: #fff; }
+.page-title { font-size: 40px; font-weight: 800; color: #000; margin-bottom: 8px; letter-spacing: -1px; }
+.page-sub { font-size: 16px; color: rgba(0,0,0,0.45); }
+.shop-section { padding: 40px 0 80px; background: #fff; }
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+@media (max-width: 1024px) { .shop-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 640px) { .shop-grid { grid-template-columns: 1fr; } }
+.shop-card { border: 1px solid #000; border-radius: 20px; overflow: hidden; transition: transform 0.25s; }
+.shop-card:hover { transform: translateY(-4px); }
+.shop-cover { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 44px; }
+.shop-info { padding: 24px; }
+.shop-name-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+.shop-name { font-size: 18px; font-weight: 700; color: #000; }
+.shop-price { font-size: 20px; font-weight: 800; color: #000; }
+.shop-en { font-size: 12px; color: rgba(0,0,0,0.35); margin-bottom: 12px; }
+.shop-desc { font-size: 13px; color: rgba(0,0,0,0.55); margin-bottom: 20px; }
+.shop-add-btn {
+  width: 100%; padding: 11px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid #000; border-radius: var(--radius-pill); background: transparent;
+  font-size: 13px; font-weight: 600; color: #000; cursor: pointer; transition: all 0.2s;
+}
+.shop-add-btn:hover { background: #000; color: #fff; }
+
+/* ============================================
+   Cart Page
+   ============================================ */
+.cart-layout { display: flex; gap: 32px; align-items: flex-start; margin-top: 32px; }
+@media (max-width: 768px) { .cart-layout { flex-direction: column; } }
+.cart-items { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.cart-item {
+  display: flex; align-items: center; gap: 16px;
+  border: 1px solid rgba(0,0,0,0.1); border-radius: 14px; padding: 16px 20px;
+}
+.ci-name { flex: 1; }
+.ci-name .ci-title { font-size: 15px; font-weight: 600; color: #000; }
+.ci-name .ci-price { font-size: 12px; color: rgba(0,0,0,0.4); margin-top: 2px; }
+.ci-qty { display: flex; align-items: center; gap: 10px; }
+.qty-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2);
+  background: transparent; cursor: pointer; font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.qty-btn:hover { background: #000; color: #fff; border-color: #000; }
+.ci-qty .qty-num { font-size: 14px; font-weight: 600; color: #000; min-width: 20px; text-align: center; }
+.ci-subtotal { width: 72px; text-align: right; font-size: 15px; font-weight: 700; color: #000; }
+.ci-del { background: none; border: none; cursor: pointer; color: rgba(0,0,0,0.3); font-size: 16px; transition: color 0.2s; }
+.ci-del:hover { color: #000; }
+.cart-summary {
+  width: 300px; border: 1px solid #000; border-radius: 20px; padding: 28px;
+  position: sticky; top: 80px; flex-shrink: 0;
+}
+.cart-summary h2 { font-size: 17px; font-weight: 700; color: #000; margin-bottom: 20px; }
+.summary-rows { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(0,0,0,0.55); }
+.summary-divider { height: 1px; background: rgba(0,0,0,0.08); margin: 4px 0; }
+.summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: #000; }
+.checkout-btn { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: var(--radius-pill); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: opacity 0.2s; }
+.checkout-btn:hover { opacity: 0.82; }
+.checkout-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.secure-note { text-align: center; font-size: 11px; color: rgba(0,0,0,0.3); margin-top: 10px; }
+.cart-empty { text-align: center; padding: 80px 0; }
+.cart-empty .empty-icon { font-size: 52px; margin-bottom: 16px; }
+.cart-empty p { font-size: 17px; color: rgba(0,0,0,0.45); margin-bottom: 24px; }
+
+/* ============================================
+   Login Page
+   ============================================ */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 80px 24px 40px; background: #fff;
+}
+.login-card {
+  width: 100%; max-width: 420px; border: 1px solid #000;
+  border-radius: 24px; padding: 40px; background: #fff;
+}
+.login-logo { font-size: 24px; font-weight: 800; color: #000; margin-bottom: 8px; letter-spacing: -0.5px; }
+.login-tagline { font-size: 14px; color: rgba(0,0,0,0.45); margin-bottom: 32px; }
+.login-tabs { display: flex; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; overflow: hidden; margin-bottom: 28px; }
+.login-tab { flex: 1; padding: 10px; font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.4); background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+.login-tab.active { background: #000; color: #fff; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: #000; margin-bottom: 6px; }
+.form-input {
+  width: 100%; padding: 12px 14px; border: 1px solid rgba(0,0,0,0.2); border-radius: 10px;
+  font-size: 14px; font-family: var(--font-sans); outline: none;
+  transition: border-color 0.2s; background: #fff; color: #000;
+}
+.form-input:focus { border-color: #000; }
+.form-input.error { border-color: #ef4444; }
+.form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
+.form-submit { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: var(--radius-pill); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: opacity 0.2s; }
+.form-submit:hover { opacity: 0.82; }
+.form-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.or-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: rgba(0,0,0,0.3); font-size: 12px; }
+.or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.1); }
+.github-btn {
+  width: 100%; padding: 12px; background: transparent; border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 10px; font-size: 14px; font-weight: 600; color: #000; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.github-btn:hover { background: rgba(0,0,0,0.04); }
+.demo-btn {
+  width: 100%; padding: 12px; background: var(--gradient-hero); border: none;
+  border-radius: 10px; font-size: 14px; font-weight: 700; color: #000; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 10px;
+}
+.demo-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.login-msg { padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: none; }
+.login-msg.success { background: rgba(0,255,136,0.1); color: #008855; border: 1px solid rgba(0,255,136,0.25); display: block; }
+.login-msg.error { background: rgba(239,68,68,0.08); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); display: block; }
+
+/* ============================================
+   Orders Page
+   ============================================ */
+.orders-section { padding: 40px 0 80px; background: #fff; }
+.order-card { border: 1px solid rgba(0,0,0,0.1); border-radius: 18px; padding: 24px; margin-bottom: 14px; }
+.order-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.order-id-label { font-size: 11px; color: rgba(0,0,0,0.3); margin-bottom: 4px; }
+.order-id { font-size: 12px; font-family: monospace; color: rgba(0,0,0,0.6); }
+.status-badge { padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.status-paid { background: rgba(0,200,100,0.1); color: #006622; }
+.status-pending { background: rgba(255,180,0,0.12); color: #8a5000; }
+.status-cancelled { background: rgba(239,68,68,0.1); color: #b91c1c; }
+.order-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.order-item-row { display: flex; justify-content: space-between; font-size: 13px; }
+.order-item-name { color: rgba(0,0,0,0.65); }
+.order-item-price { color: #000; font-weight: 500; }
+.order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.08); }
+.order-date { font-size: 12px; color: rgba(0,0,0,0.3); }
+.order-total { font-size: 15px; font-weight: 700; color: #000; }
+
+/* ============================================
+   Profile / Personal Center Page
+   ============================================ */
+.profile-section { padding: 40px 0 80px; background: #fff; }
+.profile-header {
+  display: flex; align-items: center; gap: 24px; padding: 32px;
+  border: 1px solid rgba(0,0,0,0.1); border-radius: 20px; margin-bottom: 32px;
+  background: #fafafa;
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--gradient-hero); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 800; color: #000;
+}
+.profile-meta { flex: 1; }
+.profile-name { font-size: 22px; font-weight: 700; color: #000; margin-bottom: 4px; }
+.profile-email { font-size: 14px; color: rgba(0,0,0,0.5); margin-bottom: 6px; }
+.profile-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; background: rgba(0,0,0,0.06); border-radius: 100px;
+  font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.55);
+}
+.profile-since { font-size: 12px; color: rgba(0,0,0,0.3); margin-top: 4px; }
+
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px; }
+@media (max-width: 768px) { .profile-grid { grid-template-columns: 1fr; } }
+
+.profile-stat-card {
+  border: 1px solid rgba(0,0,0,0.1); border-radius: 18px; padding: 24px;
+  display: flex; align-items: center; gap: 20px; transition: transform 0.2s;
+}
+.profile-stat-card:hover { transform: translateY(-2px); }
+.profile-stat-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-stat-icon i { font-size: 24px; }
+.profile-stat-info { flex: 1; }
+.profile-stat-name { font-size: 13px; color: rgba(0,0,0,0.5); margin-bottom: 6px; }
+.profile-stat-bar { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; margin-bottom: 6px; overflow: hidden; }
+.profile-stat-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+.profile-stat-row { display: flex; justify-content: space-between; align-items: baseline; }
+.profile-stat-num { font-size: 22px; font-weight: 800; color: #000; }
+.profile-stat-limit { font-size: 11px; color: rgba(0,0,0,0.3); }
+
+.profile-section-title { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.profile-section-title i { font-size: 18px; }
+
+.profile-demos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 1024px) { .profile-demos-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) { .profile-demos-grid { grid-template-columns: 1fr; } }
+
+.profile-demo-card {
+  border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 20px;
+  cursor: pointer; transition: all 0.2s; text-decoration: none; color: inherit;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.profile-demo-card:hover { border-color: currentColor; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.profile-demo-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-demo-icon i { font-size: 20px; }
+.profile-demo-name { font-size: 15px; font-weight: 700; color: #000; }
+.profile-demo-desc { font-size: 12px; color: rgba(0,0,0,0.45); line-height: 1.5; }
+.profile-demo-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 100px; }
+
+.profile-orders-list { display: flex; flex-direction: column; gap: 12px; }
+.profile-order-row {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px solid rgba(0,0,0,0.08); border-radius: 12px;
+}
+.profile-order-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-order-icon i { font-size: 18px; }
+.profile-order-info { flex: 1; }
+.profile-order-name { font-size: 14px; font-weight: 600; color: #000; }
+.profile-order-date { font-size: 12px; color: rgba(0,0,0,0.35); }
+.profile-order-price { font-size: 14px; font-weight: 700; color: #000; }
+
+.profile-settings { border: 1px solid rgba(0,0,0,0.1); border-radius: 18px; overflow: hidden; }
+.profile-setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);
+  transition: background 0.15s;
+}
+.profile-setting-row:last-child { border-bottom: none; }
+.profile-setting-row:hover { background: #fafafa; }
+.profile-setting-left { display: flex; align-items: center; gap: 14px; }
+.profile-setting-left i { font-size: 18px; color: rgba(0,0,0,0.4); }
+.profile-setting-name { font-size: 14px; font-weight: 600; color: #000; }
+.profile-setting-desc { font-size: 12px; color: rgba(0,0,0,0.35); }
+.profile-setting-action { font-size: 13px; color: rgba(0,0,0,0.35); display: flex; align-items: center; gap: 4px; }
+
+/* ============================================
+   Footer
+   ============================================ */
+.footer { background: #000; color: #fff; padding: 72px 0 32px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr; gap: 36px; } }
+.footer-logo { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 14px; letter-spacing: -0.5px; }
+.footer-intro { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.7; }
+.footer-heading { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 16px; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-links a { font-size: 13px; color: rgba(255,255,255,0.55); text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: #fff; }
+.footer-tech { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-tech li { font-size: 13px; color: rgba(255,255,255,0.45); }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.footer-copy { font-size: 12px; color: rgba(255,255,255,0.28); }
+.powered-by { font-size: 12px; color: rgba(255,255,255,0.28); display: flex; align-items: center; gap: 4px; }
+.powered-by a { color: rgba(255,255,255,0.45); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+.powered-by a:hover { color: #fff; }
+
+/* ============================================
+   Toast
+   ============================================ */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: #000; color: #fff; padding: 13px 24px; border-radius: 100px;
+  font-size: 14px; font-weight: 500; z-index: 9999;
+  opacity: 0; transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================================
+   Checkout Success / Cancel
+   ============================================ */
+.result-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: #fff; text-align: center; padding: 80px 24px 40px;
+}
+.result-icon { font-size: 64px; margin-bottom: 20px; }
+.result-title { font-size: 32px; font-weight: 800; color: #000; margin-bottom: 12px; letter-spacing: -0.5px; }
+.result-sub { font-size: 16px; color: rgba(0,0,0,0.5); margin-bottom: 36px; }
+
+/* ============================================
+   Responsive adjustments
+   ============================================ */
+@media (max-width: 640px) {
+  .hero-title { letter-spacing: -1px; }
+  .section-title { font-size: 30px; }
+  .demo-tabs { flex-direction: row; }
+  .cart-summary { width: 100%; }
+  .footer-bottom { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== Toast ===================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===================== NavBar ===================== -->
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="showPage('home')">NeuraHub</a>
+    <ul class="nav-links">
+      <li><a href="#products" onclick="showPage('home')">Products</a></li>
+      <li><a href="#" onclick="showPage('shop')">Shop</a></li>
+      <li><a href="#demo" onclick="showPage('home')">Demo</a></li>
+      <li><a href="#pricing" onclick="showPage('home')">Pricing</a></li>
+    </ul>
+    <div class="nav-right" id="navRight">
+      <!-- Cart -->
+      <button class="cart-btn" onclick="showPage('cart')" title="购物车">
+        <i class="ri-shopping-cart-line" style="font-size:20px"></i>
+        <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+      <!-- Login state rendered by JS -->
+      <div id="authBtns">
+        <button class="btn-ghost" onclick="showPage('login')" style="padding:9px 20px">登录</button>
+        <button class="btn-solid" onclick="showPage('login')" style="padding:9px 20px">注册</button>
+      </div>
+      <div id="userArea" style="display:none">
+        <button class="user-btn" onclick="toggleDropdown()">
+          <div class="user-avatar"></div>
+          <span id="userEmail">用户</span>
+          ▾
+          <div class="dropdown" id="dropdown">
+            <a href="#" onclick="showPage('profile');closeDropdown()"><i class="ri-user-line"></i> 个人中心</a>
+            <a href="#" onclick="showPage('orders');closeDropdown()"><i class="ri-file-list-3-line"></i> 我的订单</a>
+            <hr />
+            <a href="#" onclick="doLogout()">退出登录</a>
+          </div>
+        </button>
+      </div>
+    </div>
+    <button class="hamburger" onclick="toggleMobile()"><i class="ri-menu-line"></i></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#products" onclick="showPage('home');toggleMobile()">Products</a>
+    <a href="#" onclick="showPage('shop');toggleMobile()">Shop</a>
+    <a href="#demo" onclick="showPage('home');toggleMobile()">Demo</a>
+    <a href="#pricing" onclick="showPage('home');toggleMobile()">Pricing</a>
+    <a href="#" onclick="showPage('login');toggleMobile()">登录 / 注册</a>
+  </div>
+</header>
+
+<!-- ===================== HOME PAGE ===================== -->
+<div class="page active" id="page-home">
+
+  <!-- Hero -->
+  <section class="hero" id="heroSection">
+    <div class="hero-orb1"></div>
+    <div class="hero-orb2"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow anim-up">
+        <span></span> EdgeOne Pages · 全球加速 · AI 聚合平台
+      </div>
+      <h1 class="hero-title anim-up-2">
+        Welcome to<br/>
+        <span class="gradient-text">NeuraHub</span>
+      </h1>
+      <p class="hero-sub anim-up-3">探索 AI 的无限可能，一站体验未来<br/>生图 · 3D建模 · 大模型对话 · 视频生成</p>
+      <div class="hero-ctas anim-up-3">
+        <a href="#products" class="btn-solid" onclick="smoothTo('products')">探索 AI 能力 →</a>
+        <a href="#demo" class="btn-ghost" onclick="smoothTo('demo')">立即体验 Demo</a>
+      </div>
+      <div class="hero-tags anim-up-3">
+        <span class="hero-tag" style="background:rgba(0,255,136,0.08);border-color:rgba(0,255,136,0.35);color:#000"><i class="ri-star-fill" style="color:#00ff88"></i> 生图</span>
+        <span class="hero-tag" style="background:rgba(102,0,255,0.08);border-color:rgba(102,0,255,0.3);color:#000"><i class="ri-star-fill" style="color:#6600ff"></i> 3D 建模</span>
+        <span class="hero-tag" style="background:rgba(255,238,0,0.12);border-color:rgba(200,185,0,0.35);color:#000"><i class="ri-star-fill" style="color:#ffee00"></i> 大模型对话</span>
+        <span class="hero-tag" style="background:rgba(255,0,170,0.08);border-color:rgba(255,0,170,0.3);color:#000"><i class="ri-star-fill" style="color:#ff00aa"></i> 视频生成</span>
+      </div>
+      <div class="hero-img anim-up-3" style="margin-top:56px">
+        <img src="https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=1200&q=80&auto=format&fit=crop"
+             alt="AI Dashboard Preview"
+             onerror="this.src='https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1200&q=80&auto=format&fit=crop'" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Products Section -->
+  <section class="products-section" id="products">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">AI 能力矩阵</h2>
+        <p class="section-sub">四大核心模块，覆盖 AI 创作全场景</p>
+      </div>
+      <div class="products-grid" id="productsGrid"></div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section class="demo-section" id="demo">
+    <div class="container">
+      <h2 class="section-title" style="color:#fff">交互 Demo</h2>
+      <p class="section-sub" style="color:rgba(255,255,255,0.4)">选择一个模块，体验 Mock 交互演示</p>
+      <div class="demo-layout">
+        <!-- Tabs -->
+        <div class="demo-tabs" id="demoTabs"></div>
+        <!-- Panel -->
+        <div class="demo-panel" id="demoPanel">
+          <!-- Image Gen -->
+          <div class="demo-pane active" id="pane-image-gen">
+            <div class="demo-inner">
+              <div class="demo-label" style="color:#00ff88"><i class="ri-star-fill"></i> Image Generation</div>
+              <div class="demo-input-row">
+                <input class="demo-input" id="imgPrompt" placeholder="描述你想生成的图像..." onkeydown="if(event.key==='Enter')genImage()" />
+                <button class="demo-gen-btn" style="background:#00ff88;color:#000" onclick="genImage()" id="imgGenBtn">生成</button>
+              </div>
+              <div class="demo-prompts">
+                <span class="demo-prompt-chip" onclick="setPrompt('赛博朋克风格东京街头，霓虹灯倒映雨水')">赛博朋克东京...</span>
+                <span class="demo-prompt-chip" onclick="setPrompt('A futuristic AI city at night with neon lights')">Futuristic city...</span>
+                <span class="demo-prompt-chip" onclick="setPrompt('量子粒子构成的超现实花卉场景')">量子花园...</span>
+              </div>
+              <div class="gen-results" id="genResults">
+                <div class="gen-placeholder"><i class="ri-image-line gen-icon"></i><span class="label">赛博都市</span><span class="desc">霓虹色调，未来感城市夜景</span></div>
+                <div class="gen-placeholder"><i class="ri-planet-line gen-icon"></i><span class="label">量子花园</span><span class="desc">数字粒子超现实花卉</span></div>
+                <div class="gen-placeholder"><i class="ri-rocket-line gen-icon"></i><span class="label">星际旅人</span><span class="desc">宇宙背景孤独行者剪影</span></div>
+                <div class="gen-placeholder"><i class="ri-computer-line gen-icon"></i><span class="label">流光代码</span><span class="desc">代码雨与都市轮廓</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- 3D Model -->
+          <div class="demo-pane" id="pane-3d-model">
+            <div class="demo-inner">
+              <div class="demo-label" style="color:#6600ff"><i class="ri-cube-line"></i> 3D Model Generation</div>
+              <p style="font-size:13px;color:rgba(255,255,255,0.4)">实时渲染线框模型预览 — 由 EdgeOne 边缘加速</p>
+              <canvas id="canvas3d" width="600" height="280"></canvas>
+              <div class="model-btns">
+                <button class="model-btn active" id="btn-cube" onclick="setShape('cube')">立方体</button>
+                <button class="model-btn" id="btn-sphere" onclick="setShape('sphere')">球体</button>
+                <button class="model-btn" id="btn-cylinder" onclick="setShape('cylinder')">圆柱</button>
+              </div>
+            </div>
+          </div>
+          <!-- LLM Chat -->
+          <div class="demo-pane" id="pane-llm-chat">
+            <div class="chat-header">
+              <span class="chat-title">LLM Chat Interface</span>
+              <span class="chat-mode">Mock Mode</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+              <div class="msg user"><div class="msg-bubble">帮我写一首关于 AI 未来的短诗</div></div>
+              <div class="msg ai"><div class="msg-bubble">代码如诗，流转于光速之间，\n硅基梦境，编织万千星辰。\n人机共舞，跨越时空边界，\n智能曙光，照亮无尽可能。</div></div>
+              <div class="msg user"><div class="msg-bubble">量子计算的基本原理是什么？</div></div>
+              <div class="msg ai"><div class="msg-bubble">量子计算利用量子比特（qubit）的叠加态和纠缠特性，能够同时处理多种状态，比传统计算机指数级地提升特定问题的求解速度。核心概念包括：\n\n• 叠加态（Superposition）\n• 量子纠缠（Entanglement）\n• 量子干涉（Interference）</div></div>
+            </div>
+            <div class="chat-input-row">
+              <input class="chat-input" id="chatInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendChat()" />
+              <button class="chat-send" onclick="sendChat()"><i class="ri-send-plane-fill"></i></button>
+            </div>
+          </div>
+          <!-- Video Gen -->
+          <div class="demo-pane" id="pane-video-gen">
+            <div class="demo-inner">
+              <div class="demo-label" style="color:#ff00aa"><i class="ri-film-line"></i> Video Generation</div>
+              <div class="video-preview" id="videoPreview">
+                <div style="text-align:center">
+                  <div class="v-hint">点击「开始生成」查看模拟进度</div>
+                </div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-labels">
+                  <span id="vStage">等待开始</span>
+                  <span id="vPct">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progressFill" style="width:0%;background:linear-gradient(90deg,#ff00aa,#6600ff)"></div>
+                </div>
+              </div>
+              <div class="video-btns">
+                <button class="video-start-btn" id="videoStartBtn" style="background:#ff00aa;color:#fff" onclick="toggleVideo()"><i class="ri-play-fill"></i> 开始生成</button>
+                <button class="video-reset-btn" onclick="resetVideo()"><i class="ri-restart-line"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="pricing-section" id="pricing">
+    <div class="container">
+      <div class="section-header" style="text-align:center">
+        <h2 class="section-title">选择适合你的套餐</h2>
+        <p class="section-sub">按月订阅，随时取消 · Stripe 安全支付</p>
+      </div>
+      <div class="pricing-grid" id="pricingGrid"></div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+      <h2 class="section-title" style="color:#fff;text-align:center">平台数据</h2>
+      <div class="stats-grid">
+        <div>
+          <div class="stat-num" id="statViews">0</div>
+          <div class="stat-label">累计访问量</div>
+          <div class="stat-note">EdgeOne KV 实时统计</div>
+        </div>
+        <div>
+          <div class="stat-num" id="statModules">0</div>
+          <div class="stat-label">支持 AI 模块</div>
+        </div>
+        <div>
+          <div class="stat-num" id="statMs">0<span style="font-size:36px;letter-spacing:0">ms</span></div>
+          <div class="stat-label">毫秒级响应</div>
+          <div class="stat-note">EdgeOne 全球加速</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /home page -->
+
+<!-- ===================== SHOP PAGE ===================== -->
+<div class="page" id="page-shop">
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">AI 能力商城</h1>
+      <p class="page-sub">选购适合你的 AI 能力套餐，即买即用</p>
+    </div>
+  </div>
+  <div class="shop-section">
+    <div class="container">
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CART PAGE ===================== -->
+<div class="page" id="page-cart">
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">购物车</h1>
+      <p class="page-sub" id="cartSubtitle"></p>
+    </div>
+  </div>
+  <div class="container" style="padding-bottom:80px">
+    <div id="cartEmpty" class="cart-empty" style="display:none">
+      <div class="empty-icon"><i class="ri-shopping-cart-2-line" style="font-size:52px;color:rgba(0,0,0,0.15)"></i></div>
+      <p>购物车是空的</p>
+      <button class="btn-solid" onclick="showPage('shop')">去选购</button>
+    </div>
+    <div id="cartContent" class="cart-layout" style="display:none">
+      <div class="cart-items" id="cartItemsList"></div>
+      <div class="cart-summary">
+        <h2>订单摘要</h2>
+        <div class="summary-rows">
+          <div class="summary-row"><span>小计</span><span id="cartSubtotalAmt">$0.00</span></div>
+          <div class="summary-row"><span>税费（10%）</span><span id="cartTax">$0.00</span></div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-total" style="margin-top:14px"><span>合计</span><span id="cartTotal">$0.00</span></div>
+        <button class="checkout-btn" onclick="handleCheckout()" id="checkoutBtn">去结算 →</button>
+        <p class="secure-note"><i class="ri-shield-check-line"></i> 由 Stripe 安全支付保障</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div class="page" id="page-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">NeuraHub</div>
+      <p class="login-tagline">登录后解锁完整 AI 体验</p>
+      <div class="login-tabs">
+        <button class="login-tab active" id="tabLogin" onclick="switchTab('login')">登录</button>
+        <button class="login-tab" id="tabRegister" onclick="switchTab('register')">注册</button>
+      </div>
+      <div id="loginMsg" class="login-msg"></div>
+      <!-- Login form -->
+      <div id="formLogin">
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <input class="form-input" type="email" id="loginEmail" placeholder="your@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" type="password" id="loginPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <button class="form-submit" onclick="doLogin()" id="loginBtn">登录</button>
+        <button class="demo-btn" onclick="fillDemo()">
+          <i class="ri-rocket-line"></i> 演示账号体验
+        </button>
+        <div class="or-divider">或</div>
+        <button class="github-btn" onclick="showToast('GitHub OAuth 需配置 Supabase，当前为演示模式')">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          使用 GitHub 登录
+        </button>
+      </div>
+      <!-- Register form -->
+      <div id="formRegister" style="display:none">
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <input class="form-input" type="email" id="regEmail" placeholder="your@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" type="password" id="regPwd" placeholder="至少 8 位" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认密码</label>
+          <input class="form-input" type="password" id="regPwd2" placeholder="再输一遍" onkeydown="if(event.key==='Enter')doRegister()" />
+        </div>
+        <button class="form-submit" onclick="doRegister()" id="regBtn">创建账号</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PROFILE / PERSONAL CENTER PAGE ===================== -->
+<div class="page" id="page-profile">
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">个人中心</h1>
+      <p class="page-sub">管理账号、查看使用统计、快速进入各 AI 模块演示</p>
+    </div>
+  </div>
+  <div class="profile-section">
+    <div class="container">
+
+      <!-- User Header -->
+      <div class="profile-header" id="profileHeader">
+        <div class="profile-avatar" id="profileAvatar"></div>
+        <div class="profile-meta">
+          <div class="profile-name" id="profileName">访客</div>
+          <div class="profile-email" id="profileEmail">未登录</div>
+          <div class="profile-badge"><i class="ri-vip-crown-line"></i> 演示账号</div>
+          <div class="profile-since" id="profileSince"></div>
+        </div>
+      </div>
+
+      <!-- Usage Stats for all 4 modules -->
+      <div class="profile-section-title"><i class="ri-bar-chart-box-line"></i> AI 能力使用统计</div>
+      <div class="profile-grid" id="profileStats"></div>
+
+      <!-- Quick Access Demos -->
+      <div class="profile-section-title"><i class="ri-rocket-line"></i> 快速体验全部 AI 能力</div>
+      <div class="profile-demos-grid" id="profileDemos"></div>
+
+      <!-- Recent Orders -->
+      <div class="profile-section-title"><i class="ri-file-list-3-line"></i> 最近订单</div>
+      <div class="profile-orders-list" id="profileOrders">
+        <div style="text-align:center;padding:40px 0;color:rgba(0,0,0,0.3);font-size:14px">暂无订单记录</div>
+      </div>
+
+      <!-- Account Settings -->
+      <div class="profile-section-title" style="margin-top:28px"><i class="ri-settings-3-line"></i> 账号设置</div>
+      <div class="profile-settings">
+        <div class="profile-setting-row">
+          <div class="profile-setting-left">
+            <i class="ri-user-line"></i>
+            <div>
+              <div class="profile-setting-name">个人信息</div>
+              <div class="profile-setting-desc">修改昵称、头像、绑定邮箱</div>
+            </div>
+          </div>
+          <div class="profile-setting-action">演示模式 <i class="ri-arrow-right-s-line"></i></div>
+        </div>
+        <div class="profile-setting-row">
+          <div class="profile-setting-left">
+            <i class="ri-lock-password-line"></i>
+            <div>
+              <div class="profile-setting-name">修改密码</div>
+              <div class="profile-setting-desc">更新你的账号登录密码</div>
+            </div>
+          </div>
+          <div class="profile-setting-action">演示模式 <i class="ri-arrow-right-s-line"></i></div>
+        </div>
+        <div class="profile-setting-row">
+          <div class="profile-setting-left">
+            <i class="ri-notification-3-line"></i>
+            <div>
+              <div class="profile-setting-name">通知设置</div>
+              <div class="profile-setting-desc">管理邮件、短信、应用内通知</div>
+            </div>
+          </div>
+          <div class="profile-setting-action">演示模式 <i class="ri-arrow-right-s-line"></i></div>
+        </div>
+        <div class="profile-setting-row">
+          <div class="profile-setting-left">
+            <i class="ri-shield-check-line"></i>
+            <div>
+              <div class="profile-setting-name">安全与隐私</div>
+              <div class="profile-setting-desc">两步验证、登录日志、设备管理</div>
+            </div>
+          </div>
+          <div class="profile-setting-action">演示模式 <i class="ri-arrow-right-s-line"></i></div>
+        </div>
+        <div class="profile-setting-row" onclick="doLogout();showPage('home')" style="cursor:pointer">
+          <div class="profile-setting-left">
+            <i class="ri-logout-box-line"></i>
+            <div>
+              <div class="profile-setting-name" style="color:#dc2626">退出登录</div>
+              <div class="profile-setting-desc">当前为演示账号，退出后返回首页</div>
+            </div>
+          </div>
+          <div class="profile-setting-action">退出 <i class="ri-arrow-right-s-line"></i></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ORDERS PAGE ===================== -->
+<div class="page" id="page-orders">
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">我的订单</h1>
+      <p class="page-sub">查看历史购买记录</p>
+    </div>
+  </div>
+  <div class="orders-section">
+    <div class="container" id="ordersList"></div>
+  </div>
+</div>
+
+<!-- ===================== CHECKOUT SUCCESS ===================== -->
+<div class="page" id="page-checkout-success">
+  <div class="result-page">
+    <div>
+      <div class="result-icon"><i class="ri-gift-line" style="font-size:64px;display:block"></i></div>
+      <h2 class="result-title">支付成功！</h2>
+      <p class="result-sub">感谢你的购买，AI 能力已激活。<br/>订单详情将发送至你的邮箱。</p>
+      <button class="btn-solid" onclick="showPage('orders')">查看我的订单</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CHECKOUT CANCEL ===================== -->
+<div class="page" id="page-checkout-cancel">
+  <div class="result-page">
+    <div>
+      <div class="result-icon"><i class="ri-emotion-unhappy-line" style="font-size:64px;display:block"></i></div>
+      <h2 class="result-title">支付已取消</h2>
+      <p class="result-sub">你的购物车内容已保留，随时可以重新结算。</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-solid" onclick="showPage('cart')">返回购物车</button>
+        <button class="btn-ghost" onclick="showPage('home')">继续逛逛</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Footer ===================== -->
+<footer class="footer" id="siteFooter">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">NeuraHub</div>
+        <p class="footer-intro">一站式 AI 能力聚合平台，连接生图、3D、大模型、视频等前沿 AI 技术。由 EdgeOne Pages 全球加速，毫秒级响应。</p>
+      </div>
+      <div>
+        <div class="footer-heading">友情链接</div>
+        <ul class="footer-links">
+          <li><a href="https://edgeone.ai" target="_blank" rel="noopener">EdgeOne Pages</a></li>
+          <li><a href="https://cloud.tencent.com" target="_blank" rel="noopener">腾讯云</a></li>
+          <li><a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a></li>
+          <li><a href="https://stripe.com" target="_blank" rel="noopener">Stripe</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-heading">技术栈</div>
+        <ul class="footer-tech">
+          <li>React + Vite + TypeScript</li>
+          <li>Tailwind CSS + Framer Motion</li>
+          <li>Supabase Auth + PostgreSQL</li>
+          <li>Stripe Checkout</li>
+          <li>EdgeOne Edge Functions + KV</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy" id="footerCopy"></p>
+      <div class="powered-by">Powered by <a href="https://edgeone.ai" target="_blank" rel="noopener">EdgeOne Pages</a></div>
+    </div>
+  </div>
+</footer>
+
+<!-- ===================== JavaScript ===================== -->
+<script>
+/* ──────────────────────────────────────────────────────
+   SITE CONFIG — 修改此处配置版权等信息
+─────────────────────────────────────────────────────── */
+const SITE_CONFIG = {
+  name: 'NeuraHub',
+  copyright: '© 2025 苏逸',
+};
+/* ──────────────────────────────────────────────────────
+   DATA
+─────────────────────────────────────────────────────── */
+const AI_MODULES = [
+  {
+    id: 'image-gen',
+    name: '生图',
+    nameEn: 'Image Generation',
+    description: '基于扩散模型的高质量图像生成，支持中英文 Prompt，写实/动漫/概念艺术多风格',
+    themeColor: '#00ff88',
+    iconClass: 'ri-image-2-line',
+    img: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400&q=75&auto=format&fit=crop',
+  },
+  {
+    id: '3d-model',
+    name: '3D 建模',
+    nameEn: '3D Model Generation',
+    description: '文本/图片驱动的 3D 模型生成，支持 OBJ/GLB 导出，实时预览线框渲染',
+    themeColor: '#6600ff',
+    iconClass: 'ri-cube-line',
+    img: 'https://images.unsplash.com/photo-1617791160505-6f00504e3519?w=400&q=75&auto=format&fit=crop',
+  },
+  {
+    id: 'llm-chat',
+    name: '大模型对话',
+    nameEn: 'LLM Chat',
+    description: '集成顶级 LLM 的智能对话体验，支持多轮上下文、角色扮演、代码生成等场景',
+    themeColor: '#ffee00',
+    iconClass: 'ri-message-3-line',
+    img: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=400&q=75&auto=format&fit=crop',
+  },
+  {
+    id: 'video-gen',
+    name: '视频生成',
+    nameEn: 'Video Generation',
+    description: '将文本或图片转化为高清短视频，支持运镜控制、风格迁移、人物动作生成',
+    themeColor: '#ff00aa',
+    iconClass: 'ri-movie-2-line',
+    img: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&q=75&auto=format&fit=crop',
+  },
+];
+
+const PRODUCTS = [
+  {
+    id: 'starter', name: '入门套餐', nameEn: 'Starter',
+    description: '适合个人探索，体验核心 AI 能力',
+    features: ['生图：每月 100 张', '大模型对话：每月 1,000 次', '标准响应速度', '邮件支持'],
+    price: 9.9, themeColor: '#00ff88', popular: false,
+    coverIcon: 'ri-seedling-line',
+  },
+  {
+    id: 'pro', name: '专业套餐', nameEn: 'Pro',
+    description: '适合创作者和开发者，解锁全部模块',
+    features: ['生图：每月 1,000 张', '3D 模型生成：每月 50 个', '视频生成：每月 20 段', '大模型对话：无限次', '优先响应速度', '7×24 在线支持'],
+    price: 29.9, themeColor: '#6600ff', popular: true, badge: '最受欢迎',
+    coverIcon: 'ri-flashlight-line',
+  },
+  {
+    id: 'enterprise', name: '企业套餐', nameEn: 'Enterprise',
+    description: '面向团队和企业，无限额度 + 专属服务',
+    features: ['全模块无限使用', 'API 访问权限', '专属客户经理', 'SLA 99.9% 保障', '私有化部署咨询', '团队协作工作台'],
+    price: 99.9, themeColor: '#ff00aa', popular: false,
+    coverIcon: 'ri-government-line',
+  },
+];
+
+/* ──────────────────────────────────────────────────────
+   STATE
+─────────────────────────────────────────────────────── */
+let currentUser = null; // { email, name }
+let cart = JSON.parse(localStorage.getItem('nh-cart') || '[]');
+let orders = JSON.parse(localStorage.getItem('nh-orders') || '[]');
+let currentPage = 'home';
+let videoInterval = null, videoProgress = 0, videoRunning = false;
+let cubeAngle = 0, cubeRaf = null, currentShape = 'cube';
+
+/* ──────────────────────────────────────────────────────
+   PAGE ROUTER
+─────────────────────────────────────────────────────── */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + name);
+  if (pg) {
+    pg.classList.add('active');
+    currentPage = name;
+    window.scrollTo(0, 0);
+    // Show/hide footer
+    document.getElementById('siteFooter').style.display =
+      ['login','checkout-success','checkout-cancel'].includes(name) ? 'none' : '';
+  }
+  if (name === 'cart') renderCart();
+  if (name === 'orders') renderOrders();
+  if (name === 'shop') renderShop();
+  if (name === 'profile') renderProfile();
+  if (name === '3d-model' || name === 'home') {
+    setTimeout(init3D, 100);
+  }
+}
+
+function smoothTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ──────────────────────────────────────────────────────
+   NAVBAR
+─────────────────────────────────────────────────────── */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 8);
+});
+
+function toggleMobile() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+function toggleDropdown() {
+  document.getElementById('dropdown').classList.toggle('open');
+}
+function closeDropdown() {
+  document.getElementById('dropdown').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  const ub = document.querySelector('.user-btn');
+  if (ub && !ub.contains(e.target)) closeDropdown();
+});
+
+function updateNavAuth() {
+  if (currentUser) {
+    document.getElementById('authBtns').style.display = 'none';
+    document.getElementById('userArea').style.display = 'block';
+    document.getElementById('userEmail').textContent = currentUser.email.split('@')[0];
+  } else {
+    document.getElementById('authBtns').style.display = 'flex';
+    document.getElementById('userArea').style.display = 'none';
+  }
+}
+
+function updateCartBadge() {
+  const count = cart.reduce((s, i) => s + i.qty, 0);
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+/* ──────────────────────────────────────────────────────
+   AUTH (Mock Supabase-style)
+─────────────────────────────────────────────────────── */
+function switchTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('formLogin').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('formRegister').style.display = tab==='register' ? '' : 'none';
+  clearLoginMsg();
+}
+
+function showLoginMsg(type, msg) {
+  const el = document.getElementById('loginMsg');
+  el.className = 'login-msg ' + type;
+  el.textContent = msg;
+}
+function clearLoginMsg() {
+  const el = document.getElementById('loginMsg');
+  el.className = 'login-msg';
+  el.textContent = '';
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd = document.getElementById('loginPwd').value;
+  if (!email || !pwd) { showLoginMsg('error','请填写邮箱和密码'); return; }
+  if (!email.includes('@')) { showLoginMsg('error','请输入有效邮箱'); return; }
+  // Mock auth — accept any valid email+pwd≥6
+  if (pwd.length < 6) { showLoginMsg('error','密码至少 6 位'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = '登录中...';
+  setTimeout(() => {
+    currentUser = { email };
+    localStorage.setItem('nh-user', JSON.stringify(currentUser));
+    updateNavAuth();
+    btn.disabled = false; btn.textContent = '登录';
+    showToast('登录成功');
+    showPage('home');
+  }, 900);
+}
+
+function doRegister() {
+  const email = document.getElementById('regEmail').value.trim();
+  const pwd = document.getElementById('regPwd').value;
+  const pwd2 = document.getElementById('regPwd2').value;
+  if (!email || !pwd || !pwd2) { showLoginMsg('error','请填写所有字段'); return; }
+  if (!email.includes('@')) { showLoginMsg('error','请输入有效邮箱'); return; }
+  if (pwd.length < 8) { showLoginMsg('error','密码至少 8 位'); return; }
+  if (pwd !== pwd2) { showLoginMsg('error','两次密码不一致'); return; }
+  const btn = document.getElementById('regBtn');
+  btn.disabled = true; btn.textContent = '注册中...';
+  setTimeout(() => {
+    currentUser = { email };
+    localStorage.setItem('nh-user', JSON.stringify(currentUser));
+    updateNavAuth();
+    btn.disabled = false; btn.textContent = '创建账号';
+    showToast('注册成功，欢迎加入 NeuraHub');
+    showPage('home');
+  }, 1000);
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('nh-user');
+  updateNavAuth();
+  closeDropdown();
+  showToast('已退出登录');
+  showPage('home');
+}
+
+function fillDemo() {
+  document.getElementById('loginEmail').value = 'demo@neurahub.com';
+  document.getElementById('loginPwd').value = 'demo123456';
+  doLogin();
+}
+
+/* ──────────────────────────────────────────────────────
+   PROFILE / PERSONAL CENTER
+─────────────────────────────────────────────────────── */
+function renderProfile() {
+  const user = currentUser || { email: 'demo@neurahub.com (演示)' };
+  const name = user.email ? user.email.split('@')[0] : '演示用户';
+  const initials = name.substring(0, 2).toUpperCase();
+
+  // Header
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileEmail').textContent = user.email;
+  document.getElementById('profileAvatar').textContent = initials;
+  document.getElementById('profileSince').textContent = '演示账号 · 随时体验全部功能';
+
+  // Stats: mock data for all 4 modules
+  const stats = [
+    { name: '生图 Image Generation', color: '#00ff88', used: 847, limit: 1000, iconClass: 'ri-image-2-line' },
+    { name: '3D 模型生成', color: '#6600ff', used: 42, limit: 50, iconClass: 'ri-cube-line' },
+    { name: '大模型对话 LLM Chat', color: '#ccaa00', used: 1247, limit: '∞', iconClass: 'ri-message-3-line' },
+    { name: '视频生成 Video Generation', color: '#ff00aa', used: 18, limit: 20, iconClass: 'ri-movie-2-line' },
+  ];
+  document.getElementById('profileStats').innerHTML = stats.map(s => {
+    const pct = s.limit === '∞' ? 65 : Math.min(100, Math.round(s.used / s.limit * 100));
+    return `
+      <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:${s.color}18">
+          <i class="${s.iconClass}" style="color:${s.color}"></i>
+        </div>
+        <div class="profile-stat-info">
+          <div class="profile-stat-name">${s.name}</div>
+          <div class="profile-stat-bar"><div class="profile-stat-fill" style="width:${pct}%;background:${s.color}"></div></div>
+          <div class="profile-stat-row">
+            <div class="profile-stat-num">${s.used}${s.limit === '∞' ? '' : '/' + s.limit}</div>
+            <div class="profile-stat-limit">${s.limit === '∞' ? '无限次' : '共 ' + s.limit + ' 次'}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Quick access demos for all 4 modules
+  const demos = [
+    { id: 'image-gen', name: '生图', nameEn: 'Image Generation', desc: '输入 Prompt 生成高质量图片', color: '#00ff88', iconClass: 'ri-image-2-line' },
+    { id: '3d-model', name: '3D 建模', nameEn: '3D Model Gen', desc: '文本描述生成 3D 模型', color: '#6600ff', iconClass: 'ri-cube-line' },
+    { id: 'llm-chat', name: '大模型对话', nameEn: 'LLM Chat', desc: '与 AI 智能体实时对话', color: '#ccaa00', iconClass: 'ri-message-3-line' },
+    { id: 'video-gen', name: '视频生成', nameEn: 'Video Generation', desc: '文本/图片转化为短视频', color: '#ff00aa', iconClass: 'ri-movie-2-line' },
+  ];
+  document.getElementById('profileDemos').innerHTML = demos.map(d => `
+    <div class="profile-demo-card" onclick="switchDemo('${d.id}')" style="color:${d.color}">
+      <div class="profile-demo-icon" style="background:${d.color}18">
+        <i class="${d.iconClass}" style="color:${d.color}"></i>
+      </div>
+      <div class="profile-demo-name">${d.name}</div>
+      <div class="profile-demo-desc">${d.desc}</div>
+      <div class="profile-demo-tag" style="background:${d.color}18;color:${d.color}">
+        <i class="ri-rocket-line"></i> 立即体验
+      </div>
+    </div>`).join('');
+
+  // Recent orders (last 3)
+  const recentOrders = orders.slice(-3).reverse();
+  if (recentOrders.length === 0) {
+    document.getElementById('profileOrders').innerHTML =
+      '<div style="text-align:center;padding:40px 0;color:rgba(0,0,0,0.3);font-size:14px">暂无订单记录</div>';
+  } else {
+    document.getElementById('profileOrders').innerHTML = recentOrders.map(o => {
+      const product = PRODUCTS.find(p => p.id === o.productId) || {};
+      const color = product.themeColor || '#000';
+      return `
+        <div class="profile-order-row">
+          <div class="profile-order-icon" style="background:${color}18">
+            <i class="${product.coverIcon || 'ri-shopping-bag-line'}" style="color:${color}"></i>
+          </div>
+          <div class="profile-order-info">
+            <div class="profile-order-name">${product.name || o.productId}</div>
+            <div class="profile-order-date">${o.date}</div>
+          </div>
+          <div class="profile-order-price">¥${o.price}</div>
+        </div>`;
+    }).join('');
+  }
+}
+
+/* ──────────────────────────────────────────────────────
+   PRODUCTS SECTION
+─────────────────────────────────────────────────────── */
+function renderProducts() {
+  const grid = document.getElementById('productsGrid');
+  if (!grid) return;
+  grid.innerHTML = AI_MODULES.map((m, i) => `
+    <div class="product-card" onclick="switchDemo('${m.id}')" style="animation:fadeUp 0.7s ${i*0.1}s cubic-bezier(0.16,1,0.3,1) both">
+      <div class="card-accent" style="background:${m.themeColor}"></div>
+      <div class="card-body">
+        <div class="card-icon" style="background:${m.themeColor}18"><i class="${m.iconClass}" style="font-size:22px;color:${m.themeColor}"></i></div>
+        <div class="card-name">${m.name}</div>
+        <div class="card-name-en">${m.nameEn}</div>
+        <img class="card-img" src="${m.img}" alt="${m.name}" onerror="this.style.display='none'" loading="lazy" />
+        <div class="card-desc">${m.description}</div>
+        <button class="card-btn"
+          onmouseenter="this.style.background='${m.themeColor}';this.style.borderColor='${m.themeColor}'"
+          onmouseleave="this.style.background='transparent';this.style.borderColor='#000'">
+          体验 Demo →
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ──────────────────────────────────────────────────────
+   DEMO SECTION
+─────────────────────────────────────────────────────── */
+function renderDemoTabs() {
+  const tabs = document.getElementById('demoTabs');
+  if (!tabs) return;
+  tabs.innerHTML = AI_MODULES.map(m => `
+    <button class="demo-tab ${m.id === 'image-gen' ? 'active' : ''}"
+      id="dtab-${m.id}"
+      style="border-left-color:${m.id === 'image-gen' ? m.themeColor : 'transparent'}"
+      onclick="switchDemo('${m.id}')">
+      <div class="tab-name">${m.name}</div>
+      <div class="tab-en">${m.nameEn}</div>
+    </button>
+  `).join('');
+}
+
+function switchDemo(id) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-pane').forEach(p => p.classList.remove('active'));
+  const tab = document.getElementById('dtab-' + id);
+  const pane = document.getElementById('pane-' + id);
+  if (tab) {
+    tab.classList.add('active');
+    const m = AI_MODULES.find(x => x.id === id);
+    if (m) tab.style.borderLeftColor = m.themeColor;
+  }
+  if (pane) pane.classList.add('active');
+  if (id === '3d-model') setTimeout(init3D, 80);
+}
+
+/* Image gen demo */
+function setPrompt(text) { document.getElementById('imgPrompt').value = text; }
+
+const GEN_IMAGES = [
+  { url: 'https://images.unsplash.com/photo-1617791160505-6f00504e3519?w=300&q=75', name:'赛博都市', desc:'霓虹色调城市夜景' },
+  { url: 'https://images.unsplash.com/photo-1636622433525-127afdf3662d?w=300&q=75', name:'量子花园', desc:'数字粒子超现实花卉' },
+  { url: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=300&q=75', name:'星际旅人', desc:'宇宙背景行者剪影' },
+  { url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=75', name:'流光代码', desc:'代码雨与都市轮廓' },
+];
+
+function genImage() {
+  const prompt = document.getElementById('imgPrompt').value.trim();
+  if (!prompt) { showToast('请先输入 Prompt'); return; }
+  const btn = document.getElementById('imgGenBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  const results = document.getElementById('genResults');
+  results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:rgba(255,255,255,0.4)"><span class="spinner spinner-w"></span><br/><br/>AI 生成中...</div>';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = '生成';
+    results.innerHTML = GEN_IMAGES.map(img => `
+      <div class="gen-result-card">
+        <img src="${img.url}" alt="${img.name}" loading="lazy"
+          onerror="this.parentElement.querySelector('.gen-result-overlay').style.top='50%';this.style.display='none'" />
+        <div class="gen-result-overlay">
+          <div class="r-name">${img.name}</div>
+          <div class="r-desc">${img.desc}</div>
+        </div>
+      </div>
+    `).join('');
+    showToast('生成完成');
+  }, 2200);
+}
+
+/* LLM Chat */
+const MOCK_REPLIES = [
+  '这是一个 Mock 响应示例。在实际集成后，此处将由真实大模型 API 返回内容。',
+  '感谢你的提问！目前我处于展示模式，真实部署后将连接顶级 LLM 提供智能回答。',
+  '好问题！实际产品中，这里会由 GPT-4 / Claude / Gemini 等顶级模型驱动，提供精准、有深度的回答。',
+  '在真实版本中，我可以帮你完成代码生成、文档撰写、数据分析等复杂任务。',
+];
+let mockReplyIdx = 0;
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const msgs = document.getElementById('chatMessages');
+  // User message
+  msgs.innerHTML += `<div class="msg user"><div class="msg-bubble">${escHtml(text)}</div></div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  // AI typing
+  setTimeout(() => {
+    const reply = MOCK_REPLIES[mockReplyIdx % MOCK_REPLIES.length];
+    mockReplyIdx++;
+    msgs.innerHTML += `<div class="msg ai"><div class="msg-bubble">${escHtml(reply)}</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 800);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* 3D Canvas */
+function init3D() {
+  const canvas = document.getElementById('canvas3d');
+  if (!canvas) return;
+  if (cubeRaf) { cancelAnimationFrame(cubeRaf); cubeRaf = null; }
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio || 600;
+  canvas.height = 280 * window.devicePixelRatio || 280;
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const W = canvas.offsetWidth || 600, H = 280;
+
+  const SHAPES = {
+    cube: {
+      vertices: [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],
+      edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]],
+    },
+    sphere: { vertices: generateSphereVerts(8), edges: generateSphereEdges(8) },
+    cylinder: { vertices: generateCylVerts(8), edges: generateCylEdges(8) },
+  };
+
+  function generateSphereVerts(n) {
+    const v = [];
+    for (let i = 0; i <= n; i++) {
+      const lat = (Math.PI * i) / n - Math.PI / 2;
+      for (let j = 0; j < n; j++) {
+        const lon = (2 * Math.PI * j) / n;
+        v.push([Math.cos(lat)*Math.cos(lon), Math.sin(lat), Math.cos(lat)*Math.sin(lon)]);
+      }
+    }
+    return v;
+  }
+  function generateSphereEdges(n) {
+    const e = [];
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        const curr = i * n + j;
+        e.push([curr, i * n + (j + 1) % n]);
+        if (i < n) e.push([curr, (i + 1) * n + j]);
+      }
+    }
+    return e;
+  }
+  function generateCylVerts(n) {
+    const v = [];
+    for (let i = 0; i < n; i++) {
+      const a = (2 * Math.PI * i) / n;
+      v.push([Math.cos(a), -1, Math.sin(a)]);
+      v.push([Math.cos(a),  1, Math.sin(a)]);
+    }
+    v.push([0, -1, 0]); v.push([0, 1, 0]);
+    return v;
+  }
+  function generateCylEdges(n) {
+    const e = [];
+    for (let i = 0; i < n; i++) {
+      e.push([i*2, i*2+1]);
+      e.push([i*2, ((i+1)%n)*2]);
+      e.push([i*2+1, ((i+1)%n)*2+1]);
+    }
+    return e;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const { vertices, edges } = SHAPES[currentShape] || SHAPES.cube;
+    const size = Math.min(W, H) * 0.3;
+    const cx = W / 2, cy = H / 2;
+    const cosA = Math.cos(cubeAngle), sinA = Math.sin(cubeAngle);
+    const cosB = Math.cos(cubeAngle * 0.6), sinB = Math.sin(cubeAngle * 0.6);
+    const project = ([x, y, z]) => {
+      const x1 = x * cosA - z * sinA, z1 = x * sinA + z * cosA;
+      const y2 = y * cosB - z1 * sinB, z2 = y * sinB + z1 * cosB;
+      const fov = 4, scale = size / (z2 + fov);
+      return [cx + x1 * scale, cy + y2 * scale];
+    };
+    const grad = ctx.createLinearGradient(cx - size, cy, cx + size, cy);
+    grad.addColorStop(0, '#6600ff');
+    grad.addColorStop(0.5, '#00ff88');
+    grad.addColorStop(1, '#ff00aa');
+    ctx.strokeStyle = grad; ctx.lineWidth = 1.5;
+    edges.forEach(([a, b]) => {
+      if (!vertices[a] || !vertices[b]) return;
+      const [ax, ay] = project(vertices[a]), [bx, by] = project(vertices[b]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    });
+    ctx.fillStyle = '#00ff88';
+    vertices.forEach(v => {
+      const [px, py] = project(v);
+      ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
+    });
+    cubeAngle += 0.012;
+    cubeRaf = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function setShape(shape) {
+  currentShape = shape;
+  document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-' + shape);
+  if (btn) btn.classList.add('active');
+}
+
+/* Video gen */
+const VIDEO_STAGES = [
+  { t: 15, label: '解析场景描述...' },
+  { t: 35, label: '生成关键帧...' },
+  { t: 60, label: '帧间插值渲染...' },
+  { t: 80, label: '音频合成...' },
+  { t: 100, label: '视频编码输出...' },
+];
+
+function toggleVideo() {
+  if (videoRunning) {
+    clearInterval(videoInterval); videoRunning = false;
+    document.getElementById('videoStartBtn').style.background = '#ff00aa';
+    document.getElementById('videoStartBtn').style.color = '#fff';
+    document.getElementById('videoStartBtn').innerHTML = '<i class="ri-play-fill"></i> 开始生成';
+  } else {
+    videoRunning = true;
+    const btn = document.getElementById('videoStartBtn');
+    btn.style.background = 'transparent'; btn.style.color = '#ff00aa';
+    btn.innerHTML = '<i class="ri-pause-fill"></i> 停止';
+    videoInterval = setInterval(() => {
+      videoProgress = Math.min(videoProgress + 1.2, 100);
+      document.getElementById('progressFill').style.width = videoProgress + '%';
+      document.getElementById('vPct').textContent = Math.floor(videoProgress) + '%';
+      const stage = VIDEO_STAGES.find(s => videoProgress < s.t)?.label ?? '视频生成完成！';
+      document.getElementById('vStage').textContent = stage;
+      const preview = document.getElementById('videoPreview');
+      if (videoProgress < 100) {
+        preview.innerHTML = `<div style="text-align:center"><i class="ri-settings-3-line v-emoji" style="animation:spin 1s linear infinite"></i><div class="v-text">${stage}</div></div>`;
+      } else {
+        clearInterval(videoInterval); videoRunning = false;
+        preview.innerHTML = '<div style="text-align:center"><i class="ri-movie-2-line v-emoji" style="font-size:40px"></i><div class="v-text">视频已生成完成</div><div class="v-meta">1920×1080 · 10s · H.264</div></div>';
+        btn.style.background = '#ff00aa'; btn.style.color = '#fff'; btn.innerHTML = '<i class="ri-play-fill"></i> 重新生成';
+      }
+    }, 60);
+  }
+}
+
+function resetVideo() {
+  clearInterval(videoInterval); videoRunning = false; videoProgress = 0;
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('vPct').textContent = '0%';
+  document.getElementById('vStage').textContent = '等待开始';
+  document.getElementById('videoPreview').innerHTML = '<div style="text-align:center"><div class="v-hint">点击「开始生成」查看模拟进度</div></div>';
+  const btn = document.getElementById('videoStartBtn');
+  btn.style.background = '#ff00aa'; btn.style.color = '#fff'; btn.innerHTML = '<i class="ri-play-fill"></i> 开始生成';
+}
+
+/* ──────────────────────────────────────────────────────
+   PRICING
+─────────────────────────────────────────────────────── */
+function renderPricing() {
+  const grid = document.getElementById('pricingGrid');
+  if (!grid) return;
+  grid.innerHTML = PRODUCTS.map((p, i) => `
+    <div class="pricing-card ${p.popular ? 'popular' : ''}" style="animation:fadeUp 0.7s ${0.2+i*0.12}s cubic-bezier(0.16,1,0.3,1) both">
+      ${p.badge ? `<div class="pricing-badge" style="background:${p.themeColor}">${p.badge}</div>` : ''}
+      <div class="price-accent" style="background:${p.themeColor}"></div>
+      <div class="price-name">${p.name}</div>
+      <div class="price-desc">${p.description}</div>
+      <div class="price-amount">
+        <span class="price-num">$${p.price}</span>
+        <span class="price-unit">/月</span>
+      </div>
+      <ul class="price-features">
+        ${p.features.map(f => `<li>${f}</li>`).join('')}
+      </ul>
+      <button class="${p.popular ? 'btn-solid' : 'btn-ghost'}" style="width:100%;justify-content:center;border-radius:9999px"
+        onclick="handlePricingBuy('${p.id}')">
+        ${currentUser ? '加入购物车' : '立即购买'}
+      </button>
+    </div>
+  `).join('');
+}
+
+function handlePricingBuy(id) {
+  if (!currentUser) { showPage('login'); return; }
+  addToCart(id);
+  showToast('已加入购物车');
+}
+
+/* ──────────────────────────────────────────────────────
+   STATS COUNTER
+─────────────────────────────────────────────────────── */
+function animateCounter(el, target, suffix = '') {
+  let start = 0; const dur = 1600;
+  const t0 = Date.now();
+  const tick = () => {
+    const progress = Math.min((Date.now() - t0) / dur, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.innerHTML = Math.floor(eased * target).toLocaleString() + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function initStats() {
+  // Simulate KV stats
+  const views = parseInt(localStorage.getItem('nh-views') || '0') + 1;
+  localStorage.setItem('nh-views', views);
+  animateCounter(document.getElementById('statViews'), views + 1204, '+');
+  animateCounter(document.getElementById('statModules'), 4);
+  animateCounter(document.getElementById('statMs'), 100);
+}
+
+/* Intersection Observer for stats */
+const statsObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { initStats(); statsObs.disconnect(); } });
+}, { threshold: 0.3 });
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('stats');
+  if (el) statsObs.observe(el);
+});
+
+/* ──────────────────────────────────────────────────────
+   SHOP
+─────────────────────────────────────────────────────── */
+function renderShop() {
+  const grid = document.getElementById('shopGrid');
+  if (!grid) return;
+  grid.innerHTML = PRODUCTS.map((p, i) => `
+    <div class="shop-card" style="animation:fadeUp 0.6s ${i*0.1}s cubic-bezier(0.16,1,0.3,1) both">
+      <div class="shop-cover" style="background:${p.themeColor}18"><i class="${p.coverIcon}" style="font-size:44px;color:${p.themeColor}"></i></div>
+      <div class="shop-info">
+        <div class="shop-name-row">
+          <div class="shop-name">${p.name}</div>
+          <div class="shop-price">$${p.price}</div>
+        </div>
+        <div class="shop-en">${p.nameEn}</div>
+        <div class="shop-desc">${p.description}</div>
+        <button class="shop-add-btn" onclick="shopAddToCart('${p.id}')"><i class="ri-shopping-cart-line"></i> 加入购物车</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function shopAddToCart(id) {
+  if (!currentUser) { showPage('login'); return; }
+  addToCart(id);
+}
+
+/* ──────────────────────────────────────────────────────
+   CART
+─────────────────────────────────────────────────────── */
+function saveCart() { localStorage.setItem('nh-cart', JSON.stringify(cart)); }
+
+function addToCart(productId) {
+  const existing = cart.find(i => i.id === productId);
+  if (existing) { existing.qty++; }
+  else {
+    const p = PRODUCTS.find(p => p.id === productId);
+    if (p) cart.push({ id: p.id, name: p.name, price: p.price, qty: 1 });
+  }
+  saveCart(); updateCartBadge();
+  showToast('已加入购物车');
+}
+
+function removeFromCart(id) { cart = cart.filter(i => i.id !== id); saveCart(); updateCartBadge(); renderCart(); }
+function updateQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  saveCart(); updateCartBadge(); renderCart();
+}
+
+function renderCart() {
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax = subtotal * 0.1;
+  const total = subtotal + tax;
+  const emptyEl = document.getElementById('cartEmpty');
+  const contentEl = document.getElementById('cartContent');
+  const subtitle = document.getElementById('cartSubtitle');
+  if (cart.length === 0) {
+    emptyEl.style.display = ''; contentEl.style.display = 'none';
+    subtitle.textContent = '';
+  } else {
+    emptyEl.style.display = 'none'; contentEl.style.display = 'flex';
+    subtitle.textContent = `共 ${cart.reduce((s,i)=>s+i.qty,0)} 件商品`;
+    document.getElementById('cartItemsList').innerHTML = cart.map(item => `
+      <div class="cart-item">
+        <div class="ci-name">
+          <div class="ci-title">${item.name}</div>
+          <div class="ci-price">$${item.price.toFixed(2)} / 月</div>
+        </div>
+        <div class="ci-qty">
+          <button class="qty-btn" onclick="updateQty('${item.id}',-1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="updateQty('${item.id}',1)">+</button>
+        </div>
+        <div class="ci-subtotal">$${(item.price * item.qty).toFixed(2)}</div>
+        <button class="ci-del" onclick="removeFromCart('${item.id}')"><i class="ri-delete-bin-line"></i></button>
+      </div>
+    `).join('');
+    document.getElementById('cartSubtotalAmt').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('cartTax').textContent = '$' + tax.toFixed(2);
+    document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+  }
+}
+
+function handleCheckout() {
+  if (!currentUser) { showPage('login'); return; }
+  if (cart.length === 0) { showToast('购物车是空的'); return; }
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true; btn.textContent = '跳转支付中...';
+  // Mock Stripe checkout
+  setTimeout(() => {
+    // Create mock order
+    const order = {
+      id: 'ord_' + Date.now(),
+      stripeSession: 'cs_test_mock_' + Math.random().toString(36).slice(2),
+      items: cart.map(i => ({ ...i })),
+      subtotal: cart.reduce((s,i) => s+i.price*i.qty, 0),
+      status: 'paid',
+      createdAt: new Date().toISOString(),
+    };
+    orders.unshift(order);
+    localStorage.setItem('nh-orders', JSON.stringify(orders));
+    cart = []; saveCart(); updateCartBadge();
+    btn.disabled = false; btn.textContent = '去结算 →';
+    showPage('checkout-success');
+  }, 1500);
+}
+
+/* ──────────────────────────────────────────────────────
+   ORDERS
+─────────────────────────────────────────────────────── */
+function renderOrders() {
+  if (!currentUser) { showPage('login'); return; }
+  const list = document.getElementById('ordersList');
+  if (!list) return;
+  if (orders.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:80px 0"><i class="ri-inbox-archive-line" style="font-size:48px;display:block;margin-bottom:16px;color:rgba(0,0,0,0.15)"></i><p style="font-size:16px;color:rgba(0,0,0,0.4)">暂无订单记录</p></div>';
+    return;
+  }
+  list.innerHTML = orders.map(order => {
+    const statusClass = { paid: 'status-paid', pending: 'status-pending', cancelled: 'status-cancelled' }[order.status] || 'status-pending';
+    const statusLabel = { paid: '已完成', pending: '待支付', cancelled: '已取消' }[order.status] || order.status;
+    const total = order.subtotal * 1.1;
+    return `
+      <div class="order-card">
+        <div class="order-top">
+          <div>
+            <div class="order-id-label">订单号</div>
+            <div class="order-id">${order.stripeSession || order.id}</div>
+          </div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="order-items">
+          ${order.items.map(i => `
+            <div class="order-item-row">
+              <span class="order-item-name">${i.name} × ${i.qty}</span>
+              <span class="order-item-price">$${(i.price * i.qty).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="order-footer">
+          <span class="order-date">${new Date(order.createdAt).toLocaleString('zh-CN')}</span>
+          <span class="order-total">合计 $${total.toFixed(2)} USD</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ──────────────────────────────────────────────────────
+   TOAST
+─────────────────────────────────────────────────────── */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ──────────────────────────────────────────────────────
+   INIT
+─────────────────────────────────────────────────────── */
+function init() {
+  // Restore user session
+  const savedUser = localStorage.getItem('nh-user');
+  if (savedUser) { try { currentUser = JSON.parse(savedUser); } catch(e) {} }
+  updateNavAuth();
+  updateCartBadge();
+  renderProducts();
+  renderDemoTabs();
+  renderPricing();
+  // Site config: copyright
+  document.getElementById('footerCopy').textContent = SITE_CONFIG.copyright;
+  // Init 3D after a tick
+  setTimeout(init3D, 200);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
